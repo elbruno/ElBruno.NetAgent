@@ -6,6 +6,11 @@ The format follows a practical versioned changelog style.
 
 ## [Unreleased]
 
+### Phase 11 — Promotional materials (2026-05-09)
+- Added docs/PROMOTION.md and docs/IMAGE_PROMPTS.md (marketing copy and image prompts)
+
+### Added
+
 ### Added
 
 - Initial planning docs.
