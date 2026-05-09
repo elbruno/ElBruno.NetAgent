@@ -90,7 +90,9 @@ namespace ElBruno.NetAgent.ViewModels
         {
             private readonly Action<object?> _execute;
             public DelegateCommand(Action<object?> execute) => _execute = execute;
+#pragma warning disable CS0067
             public event EventHandler? CanExecuteChanged;
+#pragma warning restore CS0067
             public bool CanExecute(object? parameter) => true;
             public void Execute(object? parameter) => _execute(parameter);
         }
