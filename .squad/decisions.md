@@ -178,3 +178,46 @@ Decisions for Phase 3 - Network inventory
 - Service registered as singleton; it's stateless and inexpensive to call.
 
 
+
+### astra-status-window.md — 2026-05-09T18:30:03.159-04:00
+
+Decision: Implement a minimal WPF Status window (Phase 9)
+
+Approach:
+- Added a simple MVVM Status window under Views/StatusWindow.xaml and ViewModels/StatusViewModel.cs.
+- Exposed an IStatusViewModel interface for testability under Interfaces/IStatusViewModel.cs.
+- The StatusViewModel depends on existing services: INetworkInventoryService, INetworkQualityMonitor, IDecisionEngine and IOptions<NetAgentOptions> (via DI) and uses ILogger for diagnostics. It avoids mutating network state and respects DryRun/AutoMode options.
+- Registered IStatusViewModel and StatusWindow in DI in Program.cs (appended only).
+- Integrated with TrayIconService: added an "Open Status" menu item that resolves the StatusWindow from DI and shows it on the WPF dispatcher without blocking.
+- UI actions (Open Logs/Open Config/Restore Metrics/Refresh) are implemented as commands; they call services or are documented (no destructive network actions).
+
+Notes:
+- Kept the window minimal and dependency-injection friendly for unit tests. The ViewModel uses only core services and can be instantiated with fakes.
+- Used placeholder assets if needed (existing assets folder). No startup behavior was changed except appending DI registrations.
+
+Astra - Frontend Dev
+
+Implementation: Status window added under Views and ViewModels. UI is MVVM and test-friendly.
+
+
+
+### orion-auto-mode.md — 2026-05-09T18:30:03.159-04:00
+
+Title: AutoMode hosted service (Phase 8)
+Author: Orion
+
+Decision: Implement AutoModeHostedService that evaluates network quality and decision engine on a configurable interval and only requests switches via INetworkController. Defaults: AutoModeEnabled=false, DryRunMode=true, AutoModeIntervalSeconds=30. Service logs all decisions and exposes EvaluateOnceAsync for unit testing. No OS-level changes performed in dry-run.
+
+Notes:
+- INetworkController interface added as an abstraction; production implementation to be wired later.
+- UI work (tray toggle) deferred to next phase.
+
+
+
+### orion-fix-phase7-warnings.md — 2026-05-09T18:30:03.159-04:00
+
+Decision: No Phase 7 compiler warnings found
+
+I inspected the Release build and test results. The build produced zero compiler warnings and all tests pass, so there were no Phase 7 warnings to fix in the current workspace. If you expected three warnings from Phase 7, they may already have been addressed or exist in a different branch/commit. — Orion
+
+
