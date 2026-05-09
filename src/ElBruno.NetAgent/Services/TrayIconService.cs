@@ -28,13 +28,13 @@ namespace ElBruno.NetAgent.Services
         {
             _logger.LogInformation("TrayIconService starting.");
 
-            if (Application.Current?.Dispatcher == null)
+            if (System.Windows.Application.Current?.Dispatcher == null)
             {
                 _logger.LogWarning("No WPF Application available - skipping tray icon creation.");
                 return Task.CompletedTask;
             }
 
-            Application.Current.Dispatcher.Invoke(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 _menu = new ContextMenuStrip();
 
@@ -64,7 +64,7 @@ namespace ElBruno.NetAgent.Services
                     _appLifetime?.StopApplication();
                     if (_appLifetime == null)
                     {
-                        Application.Current.Shutdown();
+                        System.Windows.Application.Current.Shutdown();
                     }
                 };
 
@@ -102,9 +102,9 @@ namespace ElBruno.NetAgent.Services
         {
             _logger.LogInformation("TrayIconService stopping.");
 
-            if (Application.Current?.Dispatcher != null)
+            if (System.Windows.Application.Current?.Dispatcher != null)
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (_notifyIcon != null)
                     {

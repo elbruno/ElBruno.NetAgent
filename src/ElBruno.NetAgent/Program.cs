@@ -20,7 +20,7 @@ namespace ElBruno.NetAgent
                 })
                 .Build();
 
-            var app = new Application();
+            var app = new System.Windows.Application();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             app.Exit += (s, e) =>
