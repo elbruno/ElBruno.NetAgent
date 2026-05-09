@@ -5,7 +5,7 @@ using ElBruno.NetAgent.Core.Configuration;
 using ElBruno.NetAgent.Core.Decision;
 using ElBruno.NetAgent.Core.Models;
 
-namespace ElBruno.NetAgent.Core.Decision
+namespace ElBruno.NetAgent.Services.Decision
 {
     /// <summary>
     /// In-memory decision engine used to score network reports and produce a decision.

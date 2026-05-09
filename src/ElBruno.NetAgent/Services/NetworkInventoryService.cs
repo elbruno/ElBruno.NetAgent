@@ -3,15 +3,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging.Abstractions;
+using ElBruno.NetAgent.Core.Models;
+using ElBruno.NetAgent.Core.Enums;
 
 namespace ElBruno.NetAgent.Core.Networking
 {
-    public interface INetworkInventoryService
-    {
-        Task<IReadOnlyList<NetworkInterfaceInfo>> GetInterfacesAsync(CancellationToken cancellationToken);
-    }
-
-    public class NetworkInventoryService : INetworkInventoryService
+    // Compatibility shim preserving the original test-facing API.
+    // Delegates to the authoritative implementation when possible.
+    public class NetworkInventoryService
     {
         private readonly IEnumerable<LightweightNetworkInterface>? _injected;
 
@@ -25,34 +25,34 @@ namespace ElBruno.NetAgent.Core.Networking
             _injected = injected;
         }
 
-        public Task<IReadOnlyList<NetworkInterfaceInfo>> GetInterfacesAsync(CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<NetworkInterfaceInfo>> GetInterfacesAsync(CancellationToken cancellationToken)
         {
-            IEnumerable<LightweightNetworkInterface> source;
             if (_injected != null)
             {
-                source = _injected;
-            }
-            else
-            {
-                // Fallback to real system adapters when not injected. Keep simple and safe.
-                source = NetworkInterface.GetAllNetworkInterfaces().Select(n => new LightweightNetworkInterface
+                var list = _injected.Select(s => new NetworkInterfaceInfo
                 {
-                    Id = n.Id,
-                    Name = n.Name,
-                    Description = n.Description ?? string.Empty,
-                    InterfaceType = n.NetworkInterfaceType
-                });
+                    Id = s.Id,
+                    Name = s.Name,
+                    Description = s.Description,
+                    Kind = Classify(s)
+                }).ToList();
+
+                return (IReadOnlyList<NetworkInterfaceInfo>)list;
             }
 
-            var list = source.Select(s => new NetworkInterfaceInfo
+            // Delegate to authoritative implementation in Services.Network and map types
+            var impl = new ElBruno.NetAgent.Services.Network.NetworkInventoryService(new NullLogger<ElBruno.NetAgent.Services.Network.NetworkInventoryService>());
+            var coreList = await impl.GetInterfacesAsync(cancellationToken).ConfigureAwait(false);
+
+            var mapped = coreList.Select(m => new NetworkInterfaceInfo
             {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description,
-                Kind = Classify(s)
+                Id = m.Id,
+                Name = m.Name,
+                Description = m.Description,
+                Kind = (NetworkAdapterKind)m.Kind
             }).ToList();
 
-            return Task.FromResult((IReadOnlyList<NetworkInterfaceInfo>)list);
+            return (IReadOnlyList<NetworkInterfaceInfo>)mapped;
         }
 
         public static NetworkAdapterKind Classify(LightweightNetworkInterface adapter)
