@@ -1,0 +1,36 @@
+# IMAGE_PROMPTS - optimized for text-to-image models
+
+1) Filename: promo-hero-1.png
+Prompt: Minimal futuristic developer workspace, clean desk with holographic monitor displaying code, warm cinematic rim lighting, photorealistic, ultra-detailed, 3:2
+Seed: 123456
+Sampler/Cfg/Steps: Euler a / 7.5 / 28
+
+2) Filename: product-mockup-1.png
+Prompt: Sleek software product hero mockup on tablet, soft studio lighting, shallow depth of field, photoreal, modern UI visible, 16:9
+Seed: 654321
+Sampler/Cfg/Steps: DDIM / 8.0 / 30
+
+3) Filename: mascot-avatar-1.png
+Prompt: Friendly geometric fox mascot, flat-vector style with subtle lighting, bold colors, simple background, high contrast, 1:1
+Seed: 111222
+Sampler/Cfg/Steps: Euler a / 6.5 / 25
+
+4) Filename: docs-illustration-1.png
+Prompt: Isometric illustration of cloud-native agents collaborating, soft pastel palette, clean lines, informative diagram style, 4:3
+Seed: 333444
+Sampler/Cfg/Steps: PLMS / 7.0 / 28
+
+5) Filename: banner-hero-1.png
+Prompt: Energetic banner with abstract data streams and glowing nodes, deep blue and cyan palette, dynamic composition, cinematic, 21:9
+Seed: 777888
+Sampler/Cfg/Steps: Euler a / 8.0 / 35
+
+6) Filename: thumbnail-icon-1.png
+Prompt: Minimal circular app icon with stylized "NA" monogram, subtle bevel, high readability on small sizes, flat background, 1:1
+Seed: 999000
+Sampler/Cfg/Steps: DDIM / 6.0 / 20
+
+Notes:
+- Short prompts are tuned for common t2i engines. Adjust seed/CFG/steps to taste.
+- "Sampler/Cfg/Steps" indicates recommended sampler, guidance for CFG scale, and step count.
+- Filenames are suggested; final assets should be saved into assets/images/ with these or repo-consistent names.
