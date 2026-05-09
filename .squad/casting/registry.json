@@ -1,3 +1,9 @@
 {
-  "agents": {}
+  "agents": {
+    "seldon": {"persistent_name":"seldon","universe":"The Matrix","created_at":"2026-05-01T16:15:43.446-04:00","legacy_named":false,"status":"active"},
+    "bayta": {"persistent_name":"bayta","universe":"The Matrix","created_at":"2026-05-01T16:15:43.446-04:00","legacy_named":false,"status":"active"},
+    "golan": {"persistent_name":"golan","universe":"The Matrix","created_at":"2026-05-01T16:15:43.446-04:00","legacy_named":false,"status":"active"},
+    "hober": {"persistent_name":"hober","universe":"The Matrix","created_at":"2026-05-01T16:15:43.446-04:00","legacy_named":false,"status":"active"},
+    "tessa": {"persistent_name":"tessa","universe":"The Matrix","created_at":"2026-05-01T16:15:43.446-04:00","legacy_named":false,"status":"active"}
+  }
 }
