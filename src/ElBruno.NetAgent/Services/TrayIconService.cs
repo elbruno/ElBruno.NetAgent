@@ -154,8 +154,8 @@ namespace ElBruno.NetAgent.Services
                             return;
                         }
 
-                        Core.Models.NetworkQualityReport bestReport = null;
-                        Core.Models.NetworkInterfaceInfo bestAdapter = null;
+                        Core.Models.NetworkQualityReport? bestReport = null;
+                        Core.Models.NetworkInterfaceInfo? bestAdapter = null;
 
                         foreach (var adapter in list)
                         {
@@ -178,8 +178,8 @@ namespace ElBruno.NetAgent.Services
                         }
 
                         var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
-                        var decision = await _decisionEngine.EvaluateAsync(bestReport, opts, CancellationToken.None).ConfigureAwait(false);
-                        var msg = $"Best: {bestAdapter.Name} score={bestReport.Score} -> Action={decision.Action} ({decision.Reason})";
+                        var decision = await _decisionEngine.EvaluateAsync(bestReport!, opts, CancellationToken.None).ConfigureAwait(false);
+                        var msg = $"Best: {bestAdapter!.Name} score={bestReport!.Score} -> Action={decision.Action} ({decision.Reason})";
                         System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(6000, "Preview Best Switch", msg, ToolTipIcon.Info));
                     }
                     catch (Exception ex) { _logger.LogWarning(ex, "PreviewBest failed"); }
