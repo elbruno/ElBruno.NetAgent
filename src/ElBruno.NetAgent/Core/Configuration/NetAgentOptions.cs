@@ -17,6 +17,7 @@ public class NetAgentOptions
 
     // Timings
     public int CheckIntervalSeconds { get; set; } = DefaultCheckIntervalSeconds; // how often to check network quality
+    public int AutoModeIntervalSeconds { get; set; } = DefaultCheckIntervalSeconds; // interval for AutoMode loop
     public int FailoverDurationSeconds { get; set; } = DefaultFailoverDurationSeconds; // how long a failover decision must hold
     public int FailbackCooldownSeconds { get; set; } = DefaultFailbackCooldownSeconds; // cooldown after a failback
 

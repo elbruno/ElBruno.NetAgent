@@ -1,6 +1,7 @@
 {
   "AutoModeEnabled": false,
   "DryRunMode": true,
+  "AutoModeIntervalSeconds": 30,
   "CheckIntervalSeconds": 5,
   "PingTimeoutMs": 1000,
   "LatencyThresholdMs": 180,

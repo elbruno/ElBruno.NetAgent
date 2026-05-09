@@ -40,6 +40,9 @@ namespace ElBruno.NetAgent
                     services.AddSingleton<ElBruno.NetAgent.Core.Decision.IDecisionEngine, ElBruno.NetAgent.Services.Decision.InMemoryDecisionEngine>();
 
                     services.AddHostedService<Services.TrayIconService>();
+
+                    // Auto mode background service - evaluates decision engine on an interval and (dry-run first) requests switches.
+                    services.AddHostedService<Services.AutoModeHostedService>();
                 })
                 .Build();
 
