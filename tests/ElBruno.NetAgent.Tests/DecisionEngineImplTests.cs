@@ -9,11 +9,11 @@ namespace ElBruno.NetAgent.Tests
 {
     public class DecisionEngineImplTests
     {
-        private Type FindTypeByName(string name)
+        private Type? FindTypeByName(string name)
         {
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
-                Type t = null;
+                Type? t = null;
                 try { t = asm.GetTypes().FirstOrDefault(x => x.Name == name); }
                 catch (ReflectionTypeLoadException) { continue; }
                 if (t != null) return t;
@@ -21,33 +21,22 @@ namespace ElBruno.NetAgent.Tests
             return null;
         }
 
-        private async Task<string> EvaluateActionNameAsync(object engineInstance, object reportInstance)
+        private async Task<string> EvaluateActionNameAsync(ElBruno.NetAgent.Core.Decision.IDecisionEngine engine, ElBruno.NetAgent.Core.Models.NetworkQualityReport? report)
         {
-            var method = engineInstance.GetType().GetMethod("EvaluateAsync", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var taskObj = (Task)method.Invoke(engineInstance, new[] { reportInstance, null, CancellationToken.None });
-            await taskObj.ConfigureAwait(false);
-            var resultProp = taskObj.GetType().GetProperty("Result");
-            var result = resultProp.GetValue(taskObj);
-            var actionProp = result.GetType().GetProperty("Action");
-            var actionValue = actionProp.GetValue(result);
-            return actionValue?.ToString() ?? string.Empty;
+            ElBruno.NetAgent.Core.Configuration.NetAgentOptions? options = null;
+            var result = await engine.EvaluateAsync(report!, options!, CancellationToken.None).ConfigureAwait(false);
+            return result.Action.ToString();
         }
 
-        private object CreateAndPopulateReport(int latencyMs, double packetLossPercent, double score = 0)
+        private ElBruno.NetAgent.Core.Models.NetworkQualityReport CreateAndPopulateReport(int latencyMs, double packetLossPercent, double score = 0)
         {
-            var type = FindTypeByName("NetworkQualityReport");
-            if (type == null)
+            var report = new ElBruno.NetAgent.Core.Models.NetworkQualityReport
             {
-                throw new InvalidOperationException("Production NetworkQualityReport type not found.");
-            }
-            var inst = Activator.CreateInstance(type);
-            var pLatency = type.GetProperty("LatencyMs");
-            pLatency.SetValue(inst, latencyMs);
-            var pPacket = type.GetProperty("PacketLossPercent");
-            pPacket.SetValue(inst, packetLossPercent);
-            var pScore = type.GetProperty("Score");
-            if (pScore != null) pScore.SetValue(inst, score);
-            return inst;
+                LatencyMs = latencyMs,
+                PacketLossPercent = packetLossPercent,
+                Score = score
+            };
+            return report;
         }
 
         [Fact]
@@ -55,7 +44,8 @@ namespace ElBruno.NetAgent.Tests
         {
             var engineType = FindTypeByName("InMemoryDecisionEngine");
             Assert.NotNull(engineType);
-            var engine = Activator.CreateInstance(engineType, nonPublic: true);
+            var engineObj = Activator.CreateInstance(engineType!, nonPublic: true);
+            var engine = (ElBruno.NetAgent.Core.Decision.IDecisionEngine)engineObj!;
             // Pass null report to exercise default healthy path
             var action = await EvaluateActionNameAsync(engine, null);
             Assert.Equal("None", action);
@@ -66,7 +56,8 @@ namespace ElBruno.NetAgent.Tests
         {
             var engineType = FindTypeByName("InMemoryDecisionEngine");
             Assert.NotNull(engineType);
-            var engine = Activator.CreateInstance(engineType, nonPublic: true);
+            var engineObj = Activator.CreateInstance(engineType!, nonPublic: true);
+            var engine = (ElBruno.NetAgent.Core.Decision.IDecisionEngine)engineObj!;
             var report = CreateAndPopulateReport(250, 40.0);
             var action = await EvaluateActionNameAsync(engine, report);
             Assert.Equal("NotifyUser", action);
@@ -77,7 +68,8 @@ namespace ElBruno.NetAgent.Tests
         {
             var engineType = FindTypeByName("InMemoryDecisionEngine");
             Assert.NotNull(engineType);
-            var engine = Activator.CreateInstance(engineType, nonPublic: true);
+            var engineObj = Activator.CreateInstance(engineType!, nonPublic: true);
+            var engine = (ElBruno.NetAgent.Core.Decision.IDecisionEngine)engineObj!;
             var report = CreateAndPopulateReport(950, 99.0);
             var action = await EvaluateActionNameAsync(engine, report);
             Assert.Equal("SwitchAdapter", action);
