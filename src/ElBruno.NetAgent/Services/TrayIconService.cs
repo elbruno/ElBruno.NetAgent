@@ -18,10 +18,43 @@ namespace ElBruno.NetAgent.Services
         private ContextMenuStrip? _menu;
         private bool _autoMode;
 
-        public TrayIconService(ILogger<TrayIconService> logger, IHostApplicationLifetime? appLifetime = null)
+        public TrayIconService(ILogger<TrayIconService> logger, Core.Configuration.IConfigurationService configurationService, IHostApplicationLifetime? appLifetime = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _appLifetime = appLifetime;
+            _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
+        }
+
+        private readonly Core.Configuration.IConfigurationService _configurationService;
+
+        // Back-compat constructor used by unit tests that instantiate the service directly.
+        public TrayIconService(ILogger<TrayIconService> logger) : this(logger, new NullConfigurationService(), null) { }
+
+        // A lightweight null implementation used when DI is not available (tests).
+        private class NullConfigurationService : Core.Configuration.IConfigurationService
+        {
+            public System.Threading.Tasks.Task<Core.Configuration.NetAgentOptions> GetOptionsAsync(System.Threading.CancellationToken cancellationToken = default)
+            {
+                return System.Threading.Tasks.Task.FromResult(new Core.Configuration.NetAgentOptions());
+            }
+
+            public System.Threading.Tasks.Task<Core.Configuration.NetAgentOptions> ReloadAsync(System.Threading.CancellationToken cancellationToken = default)
+            {
+                return GetOptionsAsync(cancellationToken);
+            }
+
+            public string GetConfigFolderPath()
+            {
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElBruno.NetAgent");
+            }
+
+            public string GetConfigFilePath()
+            {
+                return Path.Combine(GetConfigFolderPath(), "config.json");
+            }
+
+            public void OpenConfigFile() { /* no-op in tests */ }
+            public void OpenConfigFolder() { /* no-op in tests */ }
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -54,8 +87,19 @@ namespace ElBruno.NetAgent.Services
                 var openLogs = new ToolStripMenuItem("Open Logs");
                 openLogs.Click += (s, e) => _logger.LogInformation("Open Logs clicked");
 
+                var openAppData = new ToolStripMenuItem("Open App Data Folder");
+                openAppData.Click += (s, e) =>
+                {
+                    _logger.LogInformation("Open App Data Folder clicked");
+                    try { _configurationService.OpenConfigFolder(); } catch (Exception ex) { _logger.LogWarning(ex, "OpenAppData failed"); }
+                };
+
                 var openConfig = new ToolStripMenuItem("Open Config");
-                openConfig.Click += (s, e) => _logger.LogInformation("Open Config clicked");
+                openConfig.Click += (s, e) =>
+                {
+                    _logger.LogInformation("Open Config clicked");
+                    try { _configurationService.OpenConfigFile(); } catch (Exception ex) { _logger.LogWarning(ex, "OpenConfig failed"); }
+                };
 
                 var exit = new ToolStripMenuItem("Exit");
                 exit.Click += (s, e) =>
@@ -68,7 +112,7 @@ namespace ElBruno.NetAgent.Services
                     }
                 };
 
-                _menu.Items.AddRange(new ToolStripItem[] { openStatus, refreshNow, autoModeItem, openLogs, openConfig, exit });
+                _menu.Items.AddRange(new ToolStripItem[] { openStatus, refreshNow, autoModeItem, openLogs, openAppData, openConfig, exit });
 
                 _notifyIcon = new NotifyIcon()
                 {

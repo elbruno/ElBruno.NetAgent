@@ -16,6 +16,17 @@ namespace ElBruno.NetAgent
                 .ConfigureLogging(logging => logging.AddConsole())
                 .ConfigureServices((context, services) =>
                 {
+                    // Configuration service
+                    services.AddSingleton<Core.Configuration.IConfigurationService, Services.ConfigurationService>();
+
+                    // Provide IOptions<NetAgentOptions> synchronously at startup by reading the config.
+                    services.AddSingleton(provider =>
+                        Microsoft.Extensions.Options.Options.Create(
+                            provider.GetRequiredService<Core.Configuration.IConfigurationService>()
+                                .GetOptionsAsync(System.Threading.CancellationToken.None).GetAwaiter().GetResult()
+                        )
+                    );
+
                     services.AddHostedService<Services.TrayIconService>();
                 })
                 .Build();
