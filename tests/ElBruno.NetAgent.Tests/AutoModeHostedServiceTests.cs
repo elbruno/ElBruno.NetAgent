@@ -129,7 +129,7 @@ namespace ElBruno.NetAgent.Tests
             var quality = new FakeQualityService(current: 10, candidate: 90);
             var engine = new FakeDecisionEngine(new Decision { Action = "Switch", CandidateInterface = "if1" });
             var controller = new FakeController();
-            var logger = new TestLogger<AutoModeHostedService>();
+            var logger = new ElBruno.NetAgent.Tests.Helpers.TestLogger<AutoModeHostedService>();
 
             var svc = new AutoModeHostedService(quality, engine, controller, options, logger);
             await svc.StartAsync();
@@ -146,7 +146,7 @@ namespace ElBruno.NetAgent.Tests
             var quality = new FakeQualityService(current: 20, candidate: 90, candidateInterface: "if1");
             var engine = new FakeDecisionEngine(new Decision { Action = "Switch", CandidateInterface = "if1", Reason = "Candidate better" });
             var controller = new FakeController();
-            var logger = new TestLogger<AutoModeHostedService>();
+            var logger = new ElBruno.NetAgent.Tests.Helpers.TestLogger<AutoModeHostedService>();
 
             var svc = new AutoModeHostedService(quality, engine, controller, options, logger);
             await svc.StartAsync();
@@ -163,7 +163,7 @@ namespace ElBruno.NetAgent.Tests
             var quality = new FakeQualityService(current: 20, candidate: 90, candidateInterface: "if1");
             var engine = new FakeDecisionEngine(new Decision { Action = "Switch", CandidateInterface = "if1", Reason = "Candidate better" });
             var controller = new FakeController();
-            var logger = new TestLogger<AutoModeHostedService>();
+            var logger = new ElBruno.NetAgent.Tests.Helpers.TestLogger<AutoModeHostedService>();
 
             var svc = new AutoModeHostedService(quality, engine, controller, options, logger);
             await svc.StartAsync();
