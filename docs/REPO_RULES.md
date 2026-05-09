@@ -215,3 +215,9 @@ Examples:
 
 - `v0.1.0`
 - `v1.0.0`
+
+## Core engineering principles
+
+A concise set of principles to preserve long-term code quality, build/test discipline, and safety constraints. The authoritative, detailed principles live in docs/TEAM_RULES.md — avoid duplicating them here.
+
+See: [Core engineering principles](TEAM_RULES.md)
