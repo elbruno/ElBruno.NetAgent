@@ -39,6 +39,8 @@ namespace ElBruno.NetAgent
                     // Decision engine (in-memory, pure)
                     services.AddSingleton<ElBruno.NetAgent.Core.Decision.IDecisionEngine, ElBruno.NetAgent.Services.Decision.InMemoryDecisionEngine>();
 
+                    services.AddTransient<ElBruno.NetAgent.Interfaces.IStatusViewModel, ElBruno.NetAgent.ViewModels.StatusViewModel>();
+                    services.AddTransient<ElBruno.NetAgent.Views.StatusWindow>();
                     services.AddHostedService<Services.TrayIconService>();
 
                     // Auto mode background service - evaluates decision engine on an interval and (dry-run first) requests switches.

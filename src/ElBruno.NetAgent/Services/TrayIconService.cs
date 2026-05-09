@@ -17,13 +17,15 @@ namespace ElBruno.NetAgent.Services
         private NotifyIcon? _notifyIcon;
         private ContextMenuStrip? _menu;
         private bool _autoMode;
+        private readonly IServiceProvider? _serviceProvider;
 
         public TrayIconService(ILogger<TrayIconService> logger,
             Core.Configuration.IConfigurationService configurationService,
             Core.Services.INetworkInventoryService inventoryService,
             Core.Services.INetworkQualityMonitor qualityMonitor,
             Core.Decision.IDecisionEngine decisionEngine,
-            IHostApplicationLifetime? appLifetime = null)
+            IHostApplicationLifetime? appLifetime = null,
+            IServiceProvider? serviceProvider = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _appLifetime = appLifetime;
@@ -31,6 +33,7 @@ namespace ElBruno.NetAgent.Services
             _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
             _qualityMonitor = qualityMonitor ?? throw new ArgumentNullException(nameof(qualityMonitor));
             _decisionEngine = decisionEngine ?? throw new ArgumentNullException(nameof(decisionEngine));
+            _serviceProvider = serviceProvider;
         }
 
         private readonly Core.Configuration.IConfigurationService _configurationService;
@@ -83,7 +86,33 @@ namespace ElBruno.NetAgent.Services
                 _menu = new ContextMenuStrip();
 
                 var openStatus = new ToolStripMenuItem("Open Status");
-                openStatus.Click += (s, e) => _logger.LogInformation("Open Status clicked");
+                openStatus.Click += (s, e) =>
+                {
+                    try
+                    {
+                        if (_serviceProvider == null)
+                        {
+                            _logger.LogInformation("Service provider not available for Status window.");
+                            return;
+                        }
+
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            try
+                            {
+                                var window = _serviceProvider.GetService(typeof(ElBruno.NetAgent.Views.StatusWindow)) as ElBruno.NetAgent.Views.StatusWindow;
+                                if (window == null)
+                                {
+                                    var vm = _serviceProvider.GetService(typeof(ElBruno.NetAgent.Interfaces.IStatusViewModel)) as ElBruno.NetAgent.Interfaces.IStatusViewModel;
+                                    window = new ElBruno.NetAgent.Views.StatusWindow(vm);
+                                }
+                                window.Show();
+                            }
+                            catch (Exception ex) { _logger.LogWarning(ex, "Failed to open Status window"); }
+                        });
+                    }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Open Status clicked failed"); }
+                };
 
                 var refreshNow = new ToolStripMenuItem("Refresh Now");
                 refreshNow.Click += async (s, e) =>
