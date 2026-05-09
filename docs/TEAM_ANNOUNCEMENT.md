@@ -1,0 +1,3 @@
+Team Announcement: Core Engineering Principles
+
+We are adopting a set of core engineering principles to improve consistency, quality, and decision-making across the codebase. The full rules live in docs/TEAM_RULES.md — please review them before your next major change. Immediate expectation: run a Release build and the full test suite locally and resolve any failures before proceeding with the next phase. Urgent next step: everyone should run the Release build and tests now and report any blocking failures in the #triage channel.
