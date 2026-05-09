@@ -13,7 +13,19 @@ Initial scenario:
 
 ## Status
 
-Planning / initial implementation blueprint.
+**Phase 10 — Hard Safety Review Complete.**
+
+This application is **dry-run only**. No real network changes are executed.
+
+### Safety Guarantees
+
+- `DryRunMode` defaults to `true` — enforced by configuration validation
+- `LiveModeAllowed` defaults to `false` — explicit opt-in required for live execution
+- `AutoModeEnabled` defaults to `false` — automatic switching requires explicit opt-in
+- The `WindowsNetworkController` enforces a hard safety gate: even if `NetworkSwitchMode.Live` is requested, it will be forced to `DryRun` unless `LiveModeAllowed` is explicitly `true`
+- Live mode is **not yet implemented** — even with `LiveModeAllowed = true`, the controller returns "not yet implemented"
+- Configuration validation rejects any config that enables live mode
+- All audit log entries clearly mark whether they are dry-run or live
 
 ## Repository goals
 

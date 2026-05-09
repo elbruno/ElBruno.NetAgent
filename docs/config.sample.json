@@ -27,5 +27,6 @@
   ],
   "LogLevel": "Information",
   "ShowNotifications": true,
-  "StartMinimizedToTray": true
+  "StartMinimizedToTray": true,
+  "LiveModeAllowed": false
 }

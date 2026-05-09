@@ -1,30 +1,44 @@
-name: CI
+name: CI - Packaging Validation (No Publish)
 
 on:
   push:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  build:
-    name: Build and test
+  packaging:
+    name: CI Packaging Validation
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore ElBruno.NetAgent.sln
+        run: dotnet restore .\ElBruno.NetAgent.sln
 
       - name: Build
-        run: dotnet build ElBruno.NetAgent.sln --configuration Release --no-restore
+        run: dotnet build .\ElBruno.NetAgent.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test ElBruno.NetAgent.sln --configuration Release --no-build --verbosity normal
+        run: dotnet test .\ElBruno.NetAgent.sln --configuration Release --no-build --verbosity minimal
+
+      - name: Pack
+        run: dotnet pack .\src\ElBruno.NetAgent\ElBruno.NetAgent.csproj --configuration Release --no-build --output .\artifacts
+
+      - name: Smoke test local package
+        shell: pwsh
+        run: .\scripts\smoke-test-local-package.ps1 -PackagePath .\artifacts\ElBruno.NetAgent.0.1.0.nupkg
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ElBruno.NetAgent-nupkg
+          path: artifacts/*.nupkg

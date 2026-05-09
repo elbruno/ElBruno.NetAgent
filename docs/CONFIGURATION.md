@@ -142,7 +142,19 @@ Endpoints used for latency checks.
 
 The implementation should try all endpoints and use aggregate results.
 
-## 5. Validation rules
+## 7. Live Mode Settings
+
+### LiveModeAllowed
+
+When `true`, the controller is permitted to use live mode for network operations.
+
+**Default: `false`**
+
+**Important:** This is the hard safety gate. Even if `DryRunMode` is `false` and `NetworkSwitchMode.Live` is requested, live operations will NOT execute unless this flag is `true`.
+
+Configuration validation will **reject** any config where `LiveModeAllowed` is `true`.
+
+## 8. Validation rules
 
 - `CheckIntervalSeconds` must be >= 2.
 - `PingTimeoutMs` must be >= 250.
@@ -150,8 +162,11 @@ The implementation should try all endpoints and use aggregate results.
 - `PacketLossThresholdPercent` must be between 0 and 100.
 - `FailbackCooldownSeconds` must be >= 30.
 - At least one ping endpoint must be configured.
+- `DryRunMode` must be `true` (enforced by Phase 10 safety rules).
+- `AutoModeEnabled` must be `false` (enforced by Phase 10 safety rules).
+- `LiveModeAllowed` must be `false` (enforced by Phase 10 safety rules).
 
-## 6. Safe defaults
+## 9. Safe defaults
 
 First launch must use:
 

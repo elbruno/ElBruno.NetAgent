@@ -85,7 +85,41 @@ Do not implement in Phase 1:
 - Flush routing tables globally
 - Modify VPN settings
 
-## 7. Reporting issues
+## 7. Phase 10: Hard Safety Review
+
+### Safety Chain (2026-05-04)
+
+1. **NetAgentOptions.LiveModeAllowed** — new property, default `false`. Explicit opt-in gate for live execution.
+
+2. **ConfigurationValidator** — rejects any configuration where:
+   - `DryRunMode` is `false`
+   - `AutoModeEnabled` is `true`
+   - `LiveModeAllowed` is `true`
+   These are hard errors, not warnings.
+
+3. **WindowsNetworkController** — constructor-level safety gate:
+   - New overload accepts `liveModeAllowed` parameter (default `false`)
+   - If `liveModeAllowed` is `false`, the mode is forced to `DryRun` regardless of the `NetworkSwitchMode` parameter
+   - Live mode code path returns "not yet implemented" even when allowed
+
+4. **Audit Log** — all entries include `IsDryRun` flag. Dry-run entries contain diagnostic details confirming no real changes were made.
+
+### Publishing Safety Note
+
+> **Publishing a NuGet package or creating a GitHub release does NOT imply production readiness.**
+> The application is dry-run only. Live network execution is intentionally blocked by default and is not yet implemented.
+
+### Summary of Safety Guarantees
+
+| Setting | Default | Safety Mechanism |
+|---------|---------|-----------------|
+| `DryRunMode` | `true` | Config validation rejects `false` |
+| `LiveModeAllowed` | `false` | Config validation rejects `true`; Controller forces DryRun |
+| `AutoModeEnabled` | `false` | Config validation rejects `true` |
+| Live code path | Not implemented | Returns "not yet implemented" |
+| Audit logging | Always active | All entries marked with `IsDryRun` flag |
+
+## 8. Reporting issues
 
 When publishing the repository, include a GitHub issue template for bugs and diagnostics.
 

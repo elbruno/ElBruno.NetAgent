@@ -1,4 +1,9 @@
 {
-  "universe_usage_history": [],
-  "assignment_cast_snapshots": {}
+  "universe_usage_history": ["The Matrix" ],
+  "assignment_cast_snapshots": {
+    "2026-05-01T16:15:43.446-04:00": {
+      "universe": "The Matrix",
+      "agents": ["seldon","bayta","golan","hober","tessa","scribe","ralph"]
+    }
+  }
 }

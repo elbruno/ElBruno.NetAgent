@@ -113,7 +113,15 @@ Expected OIDC flow:
 | Version invalid | tag format mismatch | Use `vX.Y.Z` |
 | Package not visible | NuGet indexing delay | Wait 5-15 minutes |
 
-## 9. References
+## 9. Safety Notice
+
+**Publishing a NuGet package or creating a GitHub release does NOT imply production readiness.**
+
+The application is currently **dry-run only**. Live network execution is intentionally blocked by default and is not yet implemented.
+
+See `docs/SECURITY.md` (Phase 10) for the complete safety chain documentation.
+
+## 10. References
 
 - NuGet Login GitHub Action: `https://github.com/marketplace/actions/nuget-login`
 - GitHub OIDC docs: `https://docs.github.com/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect`
