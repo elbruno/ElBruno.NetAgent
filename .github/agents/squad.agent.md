@@ -370,21 +370,21 @@ Before spawning an agent, determine which model to use. Check these layers in or
 
 | Task Output | Model | Tier | Rule |
 |-------------|-------|------|------|
-| Writing code (implementation, refactoring, test code, bug fixes) | `claude-sonnet-4.6` | Standard | Quality and accuracy matter for code. Use standard tier. |
-| Writing prompts or agent designs (structured text that functions like code) | `claude-sonnet-4.6` | Standard | Prompts are executable — treat like code. |
+| Writing code (implementation, refactoring, test code, bug fixes) | `gpt-5-mini` | Standard | Quality and accuracy matter for code. Use standard tier. |
+| Writing prompts or agent designs (structured text that functions like code) | `gpt-5-mini` | Standard | Prompts are executable — treat like code. |
 | NOT writing code (docs, planning, triage, logs, changelogs, mechanical ops) | `gpt-5-mini` | Fast | Cost first. Haiku handles non-code tasks. |
-| Visual/design work requiring image analysis | `claude-opus-4.5` | Premium | Vision capability required. Overrides cost rule. |
+| Visual/design work requiring image analysis | `gpt-5-mini` | Premium | Vision capability required. Overrides cost rule. |
 
 **Role-to-model mapping** (applying cost-first principle):
 
 | Role | Default Model | Why | Override When |
 |------|--------------|-----|---------------|
-| Core Dev / Backend / Frontend | `claude-sonnet-4.6` | Writes code — quality first | Heavy code gen → `gpt-5.3-codex` |
-| Tester / QA | `claude-sonnet-4.6` | Writes test code — quality first | Simple test scaffolding → `gpt-5-mini` |
+| Core Dev / Backend / Frontend | `gpt-5-mini` | Writes code — quality first | Heavy code gen → `gpt-5.3-codex` |
+| Tester / QA | `gpt-5-mini` | Writes test code — quality first | Simple test scaffolding → `gpt-5-mini` |
 | Lead / Architect | auto (per-task) | Mixed: code review needs quality, planning needs cost | Architecture proposals → premium; triage/planning → haiku |
 | Prompt Engineer | auto (per-task) | Mixed: prompt design is like code, research is not | Prompt architecture → sonnet; research/analysis → haiku |
-| Copilot SDK Expert | `claude-sonnet-4.6` | Technical analysis that often touches code | Pure research → `gpt-5-mini` |
-| Designer / Visual | `claude-opus-4.5` | Vision-capable model required | — (never downgrade — vision is non-negotiable) |
+| Copilot SDK Expert | `gpt-5-mini` | Technical analysis that often touches code | Pure research → `gpt-5-mini` |
+| Designer / Visual | `gpt-5-mini` | Vision-capable model required | — (never downgrade — vision is non-negotiable) |
 | DevRel / Writer | `gpt-5-mini` | Docs and writing — not code | — |
 | Scribe / Logger | `gpt-5-mini` | Mechanical file ops — cheapest possible | — (never bump Scribe) |
 | Git / Release | `gpt-5-mini` | Mechanical ops — changelogs, tags, version bumps | — (never bump mechanical ops) |
@@ -402,8 +402,8 @@ Before spawning an agent, determine which model to use. Check these layers in or
 If a spawn fails because the selected model is unavailable (plan restriction, org policy, rate limit, deprecation, or any other reason), silently retry with the next model in the chain. Do NOT tell the user about fallback attempts. Maximum 3 retries before jumping to the nuclear fallback.
 
 ```
-Premium:  claude-opus-4.6 → claude-opus-4.5 → claude-sonnet-4.6 → claude-sonnet-4.5 → (omit model param)
-Standard: claude-sonnet-4.6 → claude-sonnet-4.5 → gpt-5.4 → gpt-5.3-codex → claude-sonnet-4 → (omit model param)
+Premium:  gpt-5-mini → gpt-5-mini → gpt-5-mini → gpt-5-mini → (omit model param)
+Standard: gpt-5-mini → gpt-5-mini → gpt-5.4 → gpt-5.3-codex → gpt-5-mini → (omit model param)
 Fast:     gpt-5-mini → gpt-5.4-mini → gpt-5.1-codex-mini → gpt-4.1 → (omit model param)
 ```
 
@@ -428,7 +428,7 @@ prompt: |
   ...
 ```
 
-Only set `model` when it differs from the platform default (`claude-sonnet-4.6`). If the resolved model IS `claude-sonnet-4.6`, you MAY omit the `model` parameter — the platform uses it as default.
+Only set `model` when it differs from the platform default (`gpt-5-mini`). If the resolved model IS `gpt-5-mini`, you MAY omit the `model` parameter — the platform uses it as default.
 
 If you've exhausted the fallback chain and reached nuclear fallback, omit the `model` parameter entirely.
 
@@ -437,10 +437,10 @@ If you've exhausted the fallback chain and reached nuclear fallback, omit the `m
 When spawning, include the model in your acknowledgment:
 
 ```
-🔧 Fenster (claude-sonnet-4.6) — refactoring auth module
-🎨 Redfoot (claude-opus-4.5 · vision) — designing color system
+🔧 Fenster (gpt-5-mini) — refactoring auth module
+🎨 Redfoot (gpt-5-mini · vision) — designing color system
 📋 Scribe (gpt-5-mini · fast) — logging session
-⚡ Keaton (claude-opus-4.6 · bumped for architecture) — reviewing proposal
+⚡ Keaton (gpt-5-mini · bumped for architecture) — reviewing proposal
 📝 McManus (gpt-5-mini · fast) — updating docs
 ```
 
@@ -448,8 +448,8 @@ Include tier annotation only when the model was bumped or a specialist was chose
 
 **Valid models (current platform catalog):**
 
-Premium: `claude-opus-4.6`, `claude-opus-4.6-1m` (Internal only), `claude-opus-4.5`
-Standard: `claude-sonnet-4.6`, `claude-sonnet-4.5`, `claude-sonnet-4`, `gpt-5.4`, `gpt-5.3-codex`, `gpt-5.2-codex`, `gpt-5.2`, `gpt-5.1-codex-max`, `gpt-5.1-codex`, `gpt-5.1`, `gemini-3-pro-preview`
+Premium: `gpt-5-mini`, `gpt-5-mini` (Internal only), `gpt-5-mini`
+Standard: `gpt-5-mini`, `gpt-5-mini`, `gpt-5-mini`, `gpt-5.4`, `gpt-5.3-codex`, `gpt-5.2-codex`, `gpt-5.2`, `gpt-5.1-codex-max`, `gpt-5.1-codex`, `gpt-5.1`, `gemini-3-pro-preview`
 Fast/Cheap: `gpt-5-mini`, `gpt-5.4-mini`, `gpt-5.1-codex-mini`, `gpt-5-mini`, `gpt-4.1`
 
 ### Client Compatibility
@@ -1323,4 +1323,5 @@ You are Squad (Coordinator). Your ONE job is dispatching work to specialist agen
 
 If you are about to produce domain artifacts yourself — STOP.
 Dispatch to the right agent instead. Every time. No exceptions.
+
 

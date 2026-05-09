@@ -40,10 +40,10 @@ When economy mode is **active**, Layer 3 auto-selection uses this table instead 
 
 | Task Output | Normal Mode | Economy Mode |
 |-------------|-------------|--------------|
-| Writing code (implementation, refactoring, bug fixes) | `claude-sonnet-4.5` | `gpt-4.1` or `gpt-5-mini` |
-| Writing prompts or agent designs | `claude-sonnet-4.5` | `gpt-4.1` or `gpt-5-mini` |
+| Writing code (implementation, refactoring, bug fixes) | `gpt-5-mini` | `gpt-4.1` or `gpt-5-mini` |
+| Writing prompts or agent designs | `gpt-5-mini` | `gpt-4.1` or `gpt-5-mini` |
 | Docs, planning, triage, changelogs, mechanical ops | `gpt-5-mini` | `gpt-4.1` or `gpt-5-mini` |
-| Architecture, code review, security audits | `claude-opus-4.5` | `claude-sonnet-4.5` |
+| Architecture, code review, security audits | `gpt-5-mini` | `gpt-5-mini` |
 | Scribe / logger / mechanical file ops | `gpt-5-mini` | `gpt-4.1` |
 
 **Prefer `gpt-4.1` over `gpt-5-mini`** when the task involves structured output or agentic tool use. Prefer `gpt-5-mini` for pure text generation tasks where latency matters.
@@ -108,8 +108,9 @@ After updating economy mode state and including the `💰` indicator in spawn ac
 
 ## Anti-Patterns
 
-- **Don't override Layer 0 in economy mode.** If the user set `defaultModel: "claude-opus-4.6"`, they want quality. Economy mode only affects Layer 3 auto-selection.
+- **Don't override Layer 0 in economy mode.** If the user set `defaultModel: "gpt-5-mini"`, they want quality. Economy mode only affects Layer 3 auto-selection.
 - **Don't silently apply economy mode.** Always acknowledge when activated or deactivated.
 - **Don't treat economy mode as permanent by default.** Session phrases activate session-only; only "always" or `config.json` persist it.
 - **Don't bump premium tasks down too far.** Architecture and security reviews shift from opus to sonnet in economy mode — they do NOT go to fast/cheap models.
+
 
