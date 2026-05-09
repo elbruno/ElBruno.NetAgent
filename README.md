@@ -43,3 +43,4 @@ Do not continue to Phase 1 until the build passes and the README has been update
 ## License
 
 MIT License.
+\nPhase 0 scaffold: minimal WPF solution added.
