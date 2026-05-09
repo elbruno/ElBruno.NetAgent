@@ -6,6 +6,16 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Packaging metadata (Phase 10) -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.0</Version>
+    <PackageId>ElBruno.NetAgent</PackageId>
+    <Authors>ElBruno</Authors>
+    <Company>ElBruno</Company>
+    <Description>ElBruno.NetAgent — network failover assistant (packaging metadata)</Description>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts\packages</PackageOutputPath>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
