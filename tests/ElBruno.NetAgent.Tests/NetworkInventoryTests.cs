@@ -11,7 +11,7 @@ namespace ElBruno.NetAgent.Tests
     public class NetworkInventoryTests
     {
         [Fact]
-        public async Task Classification_Returns_WiFi()
+        public void Classification_Returns_WiFi()
         {
             var input = new LightweightNetworkInterface
             {
@@ -26,7 +26,7 @@ namespace ElBruno.NetAgent.Tests
         }
 
         [Fact]
-        public async Task Classification_Returns_Ethernet()
+        public void Classification_Returns_Ethernet()
         {
             var input = new LightweightNetworkInterface
             {
@@ -41,7 +41,7 @@ namespace ElBruno.NetAgent.Tests
         }
 
         [Fact]
-        public async Task Classification_Returns_UsbTethering()
+        public void Classification_Returns_UsbTethering()
         {
             var input = new LightweightNetworkInterface
             {
@@ -56,7 +56,7 @@ namespace ElBruno.NetAgent.Tests
         }
 
         [Fact]
-        public async Task Classification_Returns_Virtual()
+        public void Classification_Returns_Virtual()
         {
             var input = new LightweightNetworkInterface
             {
@@ -71,7 +71,7 @@ namespace ElBruno.NetAgent.Tests
         }
 
         [Fact]
-        public async Task Classification_Returns_Loopback()
+        public void Classification_Returns_Loopback()
         {
             var input = new LightweightNetworkInterface
             {

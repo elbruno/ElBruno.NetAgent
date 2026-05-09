@@ -12,7 +12,7 @@ namespace ElBruno.NetAgent.Tests
     public class TestLogger<T> : ILogger<T>
     {
         public readonly System.Collections.Generic.List<string> Warnings = new();
-        public IDisposable BeginScope<TState>(TState state) => NullScope.Instance;
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
         public bool IsEnabled(LogLevel logLevel) => true;
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
