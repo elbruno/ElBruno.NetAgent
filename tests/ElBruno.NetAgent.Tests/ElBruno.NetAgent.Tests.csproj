@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\ElBruno.NetAgent\ElBruno.NetAgent.csproj" />
+    <ProjectReference Include="C:\\src\\ElBruno.NetAgent\\src\\ElBruno.NetAgent\\ElBruno.NetAgent.csproj" />
   </ItemGroup>
 
   <ItemGroup>
