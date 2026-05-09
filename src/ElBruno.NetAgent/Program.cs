@@ -27,6 +27,9 @@ namespace ElBruno.NetAgent
                         )
                     );
 
+                    // Network inventory
+                    services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkInventoryService, ElBruno.NetAgent.Services.Network.NetworkInventoryService>();
+
                     services.AddHostedService<Services.TrayIconService>();
                 })
                 .Build();
