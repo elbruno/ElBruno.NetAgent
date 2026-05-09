@@ -30,6 +30,15 @@ namespace ElBruno.NetAgent
                     // Network inventory
                     services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkInventoryService, ElBruno.NetAgent.Services.Network.NetworkInventoryService>();
 
+                    // Network quality tester (safe no-op default for UI/dry-run)
+                    services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkQualityTester, ElBruno.NetAgent.Services.Network.NullNetworkQualityTester>();
+
+                    // Network quality monitor (read-only)
+                    services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkQualityMonitor, ElBruno.NetAgent.Services.Network.NetworkQualityMonitor>();
+
+                    // Decision engine (in-memory, pure)
+                    services.AddSingleton<ElBruno.NetAgent.Core.Decision.IDecisionEngine, ElBruno.NetAgent.Services.Decision.InMemoryDecisionEngine>();
+
                     services.AddHostedService<Services.TrayIconService>();
                 })
                 .Build();
