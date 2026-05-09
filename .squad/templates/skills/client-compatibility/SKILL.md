@@ -59,7 +59,7 @@ The `sql` tool is **CLI-only**. It does not exist on VS Code, JetBrains, or GitH
 ```typescript
 // Coordinator detects task tool available → CLI mode
 task({ agent_type: "general-purpose", mode: "background", model: "claude-sonnet-4.5", ... })
-task({ agent_type: "general-purpose", mode: "background", model: "claude-haiku-4.5", ... })
+task({ agent_type: "general-purpose", mode: "background", model: "gpt-5-mini", ... })
 // Later: read_agent for both
 ```
 
@@ -87,3 +87,4 @@ runSubagent({ prompt: "...Scribe charter + task..." }) // Last in group
 - ❌ Apologizing or explaining platform limitations to the user
 - ❌ Using `task` when only `runSubagent` is available
 - ❌ Dropping prompt structure (charter/identity/task) on non-CLI platforms
+
