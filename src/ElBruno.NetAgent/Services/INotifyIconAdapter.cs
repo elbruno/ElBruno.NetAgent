@@ -8,8 +8,8 @@ namespace ElBruno.NetAgent.Services
     {
         bool Visible { get; set; }
         string Text { get; set; }
-        System.Drawing.Icon Icon { get; set; }
-        ContextMenuStrip ContextMenuStrip { get; set; }
+        System.Drawing.Icon? Icon { get; set; }
+        ContextMenuStrip? ContextMenuStrip { get; set; }
         void ShowBalloonTip(int timeout, string title, string text, ToolTipIcon icon);
         bool IsDisposed { get; }
     }
