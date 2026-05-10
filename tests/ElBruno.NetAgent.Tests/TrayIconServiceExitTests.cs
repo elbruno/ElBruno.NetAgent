@@ -73,8 +73,8 @@ namespace ElBruno.NetAgent.Tests
         {
             public bool Visible { get; set; }
             public string Text { get; set; }
-            public System.Drawing.Icon Icon { get; set; }
-            public ContextMenuStrip ContextMenuStrip { get; set; }
+            public System.Drawing.Icon? Icon { get; set; }
+            public ContextMenuStrip? ContextMenuStrip { get; set; }
             public bool IsDisposed { get; private set; }
             public void ShowBalloonTip(int timeout, string title, string text, ToolTipIcon icon) { }
             public void Dispose() { IsDisposed = true; }

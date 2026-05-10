@@ -36,16 +36,33 @@ namespace ElBruno.NetAgent.Services
             set => _inner.Text = value;
         }
 
-        public System.Drawing.Icon Icon
+        public System.Drawing.Icon? Icon
         {
             get => _inner.Icon;
-            set => _inner.Icon = value;
+            set
+            {
+                try
+                {
+                    if (value != null)
+                        _inner.Icon = value;
+                    else
+                        _inner.Icon = System.Drawing.SystemIcons.Application;
+                }
+                catch { }
+            }
         }
 
-        public ContextMenuStrip ContextMenuStrip
+        public ContextMenuStrip? ContextMenuStrip
         {
             get => _inner.ContextMenuStrip;
-            set => _inner.ContextMenuStrip = value;
+            set
+            {
+                try
+                {
+                    _inner.ContextMenuStrip = value ?? new ContextMenuStrip();
+                }
+                catch { }
+            }
         }
 
         public void ShowBalloonTip(int timeout, string title, string text, ToolTipIcon icon)
