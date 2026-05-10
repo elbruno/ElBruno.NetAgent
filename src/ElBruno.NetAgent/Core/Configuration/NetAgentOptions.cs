@@ -2,6 +2,27 @@ namespace ElBruno.NetAgent.Core.Configuration;
 
 public class NetAgentOptions
 {
+    public class SwitchingRulesOptions
+    {
+        public bool DryRunMode { get; set; } = true;
+        public bool AutoModeEnabled { get; set; } = false;
+        public int AutoModeIntervalSeconds { get; set; } = DefaultCheckIntervalSeconds;
+        public int PauseAutoSwitchUntilSeconds { get; set; } = 0;
+        public int PauseAutoSwitchDurationSeconds { get; set; } = 0;
+        public double MinimumQualityScore { get; set; } = 0.0;
+        public double MinimumScoreImprovement { get; set; } = 0.0;
+        public string[] PreferredInterfacePatterns { get; set; } = new string[0];
+        public string[] ExcludedInterfacePatterns { get; set; } = new string[0];
+        public string[] ExcludedInterfaceKinds { get; set; } = new string[] { "Loopback", "Vpn" };
+        public bool PreferUsbTethering { get; set; } = false;
+        public bool AllowWiFi { get; set; } = true;
+        public bool AllowEthernet { get; set; } = true;
+        public bool IgnoreVirtualAdapters { get; set; } = true;
+        public bool IgnoreDownOrUnknownAdapters { get; set; } = true;
+    }
+
+    public SwitchingRulesOptions? SwitchingRules { get; set; } = new SwitchingRulesOptions();
+
     // Default constants used by tests and other code.
     public const int DefaultLatencyThresholdMs = 150;
     public const double DefaultPacketLossThresholdPercent = 5.0;

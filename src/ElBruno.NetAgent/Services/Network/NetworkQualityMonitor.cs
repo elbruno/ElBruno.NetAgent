@@ -48,12 +48,14 @@ namespace ElBruno.NetAgent.Services.Network
             var report = new NetworkQualityReport
             {
                 InterfaceId = adapter.Id,
+                InterfaceName = adapter.Name,
+                InterfaceKind = adapter.Kind.ToString(),
                 LatencyMs = latency,
                 PacketLossPercent = loss,
                 Score = Math.Round(score, 2)
             };
 
-            _logger.LogInformation("NetworkQualityMonitor: {Name} Id:{Id} latency={Latency}ms loss={Loss}% score={Score}", adapter.Name, adapter.Id, report.LatencyMs, report.PacketLossPercent, report.Score);
+            _logger.LogInformation("NetworkQualityMonitor: {Name} Id:{Id} Kind:{Kind} latency={Latency}ms loss={Loss}% score={Score}", adapter.Name, adapter.Id, adapter.Kind, report.LatencyMs, report.PacketLossPercent, report.Score);
 
             return report;
         }

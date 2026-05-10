@@ -6,6 +6,8 @@ namespace ElBruno.NetAgent.Core.Models
     public class NetworkQualityReport
     {
         public string InterfaceId { get; set; } = string.Empty;
+        public string InterfaceName { get; set; } = string.Empty;
+        public string InterfaceKind { get; set; } = string.Empty;
         public int LatencyMs { get; set; }
         public double PacketLossPercent { get; set; }
         public double Score { get; set; }

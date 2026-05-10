@@ -21,4 +21,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>ElBruno.NetAgent.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

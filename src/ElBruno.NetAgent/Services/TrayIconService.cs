@@ -44,6 +44,13 @@ namespace ElBruno.NetAgent.Services
         // Back-compat constructor used by unit tests that instantiate the service directly.
         public TrayIconService(ILogger<TrayIconService> logger) : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), null) { }
 
+        // Internal ctor for tests to inject a test IHostApplicationLifetime and a test NotifyIcon instance (no changes to public API).
+        internal TrayIconService(ILogger<TrayIconService> logger, IHostApplicationLifetime appLifetime, NotifyIcon notifyIcon)
+            : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), appLifetime, null)
+        {
+            _notifyIcon = notifyIcon;
+        }
+
         // A lightweight null implementation used when DI is not available (tests).
         private class NullConfigurationService : Core.Configuration.IConfigurationService
         {
@@ -60,6 +67,12 @@ namespace ElBruno.NetAgent.Services
             public System.Threading.Tasks.Task SaveAsync(Core.Configuration.NetAgentOptions options, System.Threading.CancellationToken cancellationToken = default)
             {
                 // No-op configuration save in test/null implementation.
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+
+            public System.Threading.Tasks.Task SaveOptionsAsync(Core.Configuration.NetAgentOptions options, System.Threading.CancellationToken cancellationToken = default)
+            {
+                // No-op for compatibility with new interface method
                 return System.Threading.Tasks.Task.CompletedTask;
             }
 
@@ -191,12 +204,22 @@ namespace ElBruno.NetAgent.Services
 
                         Core.Models.NetworkQualityReport? bestReport = null;
                         Core.Models.NetworkInterfaceInfo? bestAdapter = null;
+                        var excludedReasons = new System.Collections.Generic.List<string>();
 
                         foreach (var adapter in list)
                         {
                             try
                             {
                                 var report = await _qualityMonitor.EvaluateAsync(adapter, CancellationToken.None).ConfigureAwait(false);
+                                var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                                var decision = await _decisionEngine.EvaluateAsync(report, opts, CancellationToken.None).ConfigureAwait(false);
+
+                                if (decision?.Reason != null && decision.Reason.StartsWith("Excluded:", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    excludedReasons.Add($"{adapter.Name}: {decision.Reason}");
+                                    continue; // skip excluded adapters
+                                }
+
                                 if (bestReport == null || report.Score > bestReport.Score)
                                 {
                                     bestReport = report;
@@ -208,14 +231,16 @@ namespace ElBruno.NetAgent.Services
 
                         if (bestAdapter == null)
                         {
-                            System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(4000, "Preview", "No suitable adapter found", ToolTipIcon.Info));
+                            var reasons = excludedReasons.Count > 0 ? string.Join("; ", excludedReasons) : "no eligible adapters";
+                            var msg = $"Dry-run: no eligible adapters - {reasons}";
+                            System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(6000, "Preview Best Switch", msg, ToolTipIcon.Info));
                             return;
                         }
 
-                        var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
-                        var decision = await _decisionEngine.EvaluateAsync(bestReport!, opts, CancellationToken.None).ConfigureAwait(false);
-                        var msg = $"Best: {bestAdapter!.Name} score={bestReport!.Score} -> Action={decision.Action} ({decision.Reason})";
-                        System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(6000, "Preview Best Switch", msg, ToolTipIcon.Info));
+                        var optsFinal = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                        var finalDecision = await _decisionEngine.EvaluateAsync(bestReport!, optsFinal, CancellationToken.None).ConfigureAwait(false);
+                        var msgFinal = $"Best: {bestAdapter!.Name} score={bestReport!.Score} -> Action={finalDecision.Action} ({finalDecision.Reason})";
+                        System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(6000, "Preview Best Switch", msgFinal, ToolTipIcon.Info));
                     }
                     catch (Exception ex) { _logger.LogWarning(ex, "PreviewBest failed"); }
                 };
@@ -229,22 +254,36 @@ namespace ElBruno.NetAgent.Services
                         var list = await _inventoryService.GetInterfacesAsync(CancellationToken.None).ConfigureAwait(false);
                         foreach (var adapter in list)
                         {
-                            var item = new ToolStripMenuItem($"{adapter.Name} ({adapter.Kind})");
-                            item.Tag = adapter;
-                            item.Click += async (ss, ee) =>
+                            try
                             {
-                                try
+                                var report = await _qualityMonitor.EvaluateAsync(adapter, CancellationToken.None).ConfigureAwait(false);
+                                var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                                var decision = await _decisionEngine.EvaluateAsync(report, opts, CancellationToken.None).ConfigureAwait(false);
+
+                                var display = $"{adapter.Name} ({adapter.Kind})";
+                                if (decision?.Reason != null && decision.Reason.StartsWith("Excluded:", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    var a = (Core.Models.NetworkInterfaceInfo)item.Tag;
-                                    var report = await _qualityMonitor.EvaluateAsync(a, CancellationToken.None).ConfigureAwait(false);
-                                    var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
-                                    var decision = await _decisionEngine.EvaluateAsync(report, opts, CancellationToken.None).ConfigureAwait(false);
-                                    var msg = $"Adapter: {a.Name}\nLatency: {report.LatencyMs}ms Loss: {report.PacketLossPercent}% Score: {report.Score}\nDecision: {decision.Action} - {decision.Reason}";
-                                    System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(8000, "Adapter Preview", msg, ToolTipIcon.Info));
+                                    display += $" - excluded: {decision.Reason.Replace("Excluded:", "").Trim()}";
                                 }
-                                catch (Exception ex) { _logger.LogWarning(ex, "Adapter preview failed"); }
-                            };
-                            interfacesMenu.DropDownItems.Add(item);
+
+                                var item = new ToolStripMenuItem(display);
+                                item.Tag = adapter;
+                                item.Click += async (ss, ee) =>
+                                {
+                                    try
+                                    {
+                                        var a = (Core.Models.NetworkInterfaceInfo)item.Tag;
+                                        var r = await _qualityMonitor.EvaluateAsync(a, CancellationToken.None).ConfigureAwait(false);
+                                        var opts2 = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                                        var dec = await _decisionEngine.EvaluateAsync(r, opts2, CancellationToken.None).ConfigureAwait(false);
+                                        var msg = $"Adapter: {a.Name}\nLatency: {r.LatencyMs}ms Loss: {r.PacketLossPercent}% Score: {r.Score}\nDecision: {dec.Action} - {dec.Reason}";
+                                        System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(8000, "Adapter Preview", msg, ToolTipIcon.Info));
+                                    }
+                                    catch (Exception ex) { _logger.LogWarning(ex, "Adapter preview failed"); }
+                                };
+                                interfacesMenu.DropDownItems.Add(item);
+                            }
+                            catch (Exception ex) { _logger.LogWarning(ex, "Error evaluating adapter for menu"); var item = new ToolStripMenuItem($"{adapter.Name} ({adapter.Kind}) - error"); interfacesMenu.DropDownItems.Add(item); }
                         }
 
                         if (list == null || list.Count == 0)
@@ -316,11 +355,18 @@ namespace ElBruno.NetAgent.Services
 
                 _menu.Items.AddRange(new ToolStripItem[] { openStatus, refreshNow, autoModeItem, showConfig, interfacesMenu, previewBest, openLogs, openAppData, openConfig, exit });
 
-                _notifyIcon = new NotifyIcon()
+                if (_notifyIcon == null)
                 {
-                    Visible = true,
-                    Text = "ElBruno.NetAgent"
-                };
+                    _notifyIcon = new NotifyIcon()
+                    {
+                        Visible = true,
+                        Text = "ElBruno.NetAgent"
+                    };
+                }
+                else
+                {
+                    try { _notifyIcon.Visible = true; _notifyIcon.Text = "ElBruno.NetAgent"; } catch { }
+                }
 
                 // Prefer a repository-provided icon if present, otherwise fall back to the system icon.
                 try
@@ -393,6 +439,128 @@ namespace ElBruno.NetAgent.Services
                 });
             }
             return Task.CompletedTask;
+        }
+
+        // Internal helper used by tests to invoke the Exit flow without relying on UI event wiring.
+        internal void InvokeExitForTests()
+        {
+            try
+            {
+                if (System.Windows.Application.Current?.Dispatcher != null)
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            if (_notifyIcon != null)
+                            {
+                                _notifyIcon.Visible = false;
+                                _notifyIcon.Dispose();
+                                _notifyIcon = null;
+                            }
+
+                            if (_menu != null)
+                            {
+                                _menu.Dispose();
+                                _menu = null;
+                            }
+                        }
+                        catch (Exception ex) { _logger.LogWarning(ex, "Error disposing tray resources during Exit (test)"); }
+
+                        // Request host/application shutdown.
+                        _appLifetime?.StopApplication();
+
+                        if (_appLifetime == null)
+                        {
+                            try
+                            {
+                                foreach (var w in System.Windows.Application.Current.Windows)
+                                {
+                                    try { (w as System.Windows.Window)?.Close(); } catch { }
+                                }
+                            }
+                            catch { }
+                            try { System.Windows.Application.Current.Shutdown(); } catch { }
+                        }
+                    });
+                }
+                else
+                {
+                    try
+                    {
+                        if (_notifyIcon != null)
+                        {
+                            _notifyIcon.Visible = false;
+                            _notifyIcon.Dispose();
+                            _notifyIcon = null;
+                        }
+
+                        if (_menu != null)
+                        {
+                            _menu.Dispose();
+                            _menu = null;
+                        }
+                    }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Error disposing tray resources during Exit (test)"); }
+
+                    _appLifetime?.StopApplication();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Exit (test) handling failed");
+                _appLifetime?.StopApplication();
+            }
+        }
+
+        // Internal helper used by tests to invoke the Exit flow without relying on UI event wiring.
+        internal void InvokeExitForTests_NoDispatch()
+        {
+            try
+            {
+                // Dispose tray resources directly to avoid dispatcher deadlocks in unit tests.
+                try
+                {
+                    if (_notifyIcon != null)
+                    {
+                        _notifyIcon.Visible = false;
+                        _notifyIcon.Dispose();
+                        _notifyIcon = null;
+                    }
+
+                    if (_menu != null)
+                    {
+                        _menu.Dispose();
+                        _menu = null;
+                    }
+                }
+                catch (Exception ex) { _logger.LogWarning(ex, "Error disposing tray resources during Exit (test)"); }
+
+                // Request host/application shutdown.
+                _appLifetime?.StopApplication();
+
+                if (_appLifetime == null)
+                {
+                    try
+                    {
+                        if (System.Windows.Application.Current != null)
+                        {
+                            foreach (var w in System.Windows.Application.Current.Windows)
+                            {
+                                try { (w as System.Windows.Window)?.Close(); } catch { }
+                            }
+
+                            try { System.Windows.Application.Current.Shutdown(); } catch { }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Exit (test) handling failed");
+                _appLifetime?.StopApplication();
+            }
         }
 
         public void Dispose()

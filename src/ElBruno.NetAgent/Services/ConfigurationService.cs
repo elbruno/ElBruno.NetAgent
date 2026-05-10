@@ -179,5 +179,27 @@ namespace ElBruno.NetAgent.Services
                 _logger.LogWarning(ex, "Failed to open config file {File}", file);
             }
         }
+
+        public async Task SaveOptionsAsync(NetAgentOptions options, CancellationToken cancellationToken = default)
+        {
+            if (options == null) throw new ArgumentNullException(nameof(options));
+
+            try
+            {
+                if (!Directory.Exists(_folderPath))
+                {
+                    Directory.CreateDirectory(_folderPath);
+                }
+
+                var json = JsonSerializer.Serialize(options, new JsonSerializerOptions { WriteIndented = true });
+                await File.WriteAllTextAsync(_filePath, json, cancellationToken).ConfigureAwait(false);
+                _cachedOptions = options;
+                _logger.LogInformation("Saved config to {Path}", _filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save config to {Path}", _filePath);
+            }
+        }
     }
 }

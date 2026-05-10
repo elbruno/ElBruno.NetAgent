@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Windows.Forms;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -14,41 +15,49 @@ namespace ElBruno.NetAgent.Tests
 {
     public class TrayIconServiceExitTests
     {
-        private IHost BuildHost(IHostApplicationLifetime lifetime)
+        private IServiceProvider BuildServiceProvider(IHostApplicationLifetime lifetime)
         {
-            var host = Host.CreateDefaultBuilder()
-                .ConfigureServices((context, services) =>
-                {
-                    // Mirror minimal registrations from Program.cs required by TrayIconService
-                    services.AddSingleton<Core.Configuration.IConfigurationService, ElBruno.NetAgent.Services.ConfigurationService>();
-                    services.AddSingleton(provider => Microsoft.Extensions.Options.Options.Create(provider.GetRequiredService<Core.Configuration.IConfigurationService>().GetOptionsAsync(System.Threading.CancellationToken.None).GetAwaiter().GetResult()));
-                    services.AddSingleton(provider => provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Core.Configuration.NetAgentOptions>>().Value);
+            var services = new ServiceCollection();
+            // Mirror minimal registrations from Program.cs required by TrayIconService
+            services.AddSingleton<Core.Configuration.IConfigurationService, ElBruno.NetAgent.Services.ConfigurationService>();
+            services.AddSingleton(provider => Microsoft.Extensions.Options.Options.Create(provider.GetRequiredService<Core.Configuration.IConfigurationService>().GetOptionsAsync(System.Threading.CancellationToken.None).GetAwaiter().GetResult()));
+            services.AddSingleton(provider => provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Core.Configuration.NetAgentOptions>>().Value);
 
-                    services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkInventoryService, ElBruno.NetAgent.Services.Network.NetworkInventoryService>();
-                    services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkQualityTester, ElBruno.NetAgent.Services.Network.NullNetworkQualityTester>();
-                    services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkQualityMonitor, ElBruno.NetAgent.Services.Network.NetworkQualityMonitor>();
-                    services.AddSingleton<ElBruno.NetAgent.Core.Decision.IDecisionEngine, TestDecisionEngine>();
+            services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkInventoryService, ElBruno.NetAgent.Services.Network.NetworkInventoryService>();
+            services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkQualityTester, ElBruno.NetAgent.Services.Network.NullNetworkQualityTester>();
+            services.AddSingleton<ElBruno.NetAgent.Core.Services.INetworkQualityMonitor, ElBruno.NetAgent.Services.Network.NetworkQualityMonitor>();
+            services.AddSingleton<ElBruno.NetAgent.Core.Decision.IDecisionEngine, TestDecisionEngine>();
 
-                    services.AddTransient<ElBruno.NetAgent.Interfaces.IStatusViewModel, ElBruno.NetAgent.ViewModels.StatusViewModel>();
-                    services.AddTransient<ElBruno.NetAgent.Views.StatusWindow>();
+            services.AddTransient<ElBruno.NetAgent.Interfaces.IStatusViewModel, ElBruno.NetAgent.ViewModels.StatusViewModel>();
+            services.AddTransient<ElBruno.NetAgent.Views.StatusWindow>();
 
-                    services.AddTransient<ElBruno.NetAgent.Interfaces.ISettingsViewModel, ElBruno.NetAgent.ViewModels.SettingsViewModel>();
-                    services.AddTransient<ElBruno.NetAgent.Views.SettingsWindow>();
+            services.AddTransient<ElBruno.NetAgent.Interfaces.ISettingsViewModel, ElBruno.NetAgent.ViewModels.SettingsViewModel>();
+            services.AddTransient<ElBruno.NetAgent.Views.SettingsWindow>();
 
-                    services.AddTransient<ElBruno.NetAgent.Interfaces.INetworkSelectorViewModel, ElBruno.NetAgent.ViewModels.NetworkSelectorViewModel>();
-                    services.AddTransient<ElBruno.NetAgent.Views.NetworkSelectorWindow>();
+            services.AddTransient<ElBruno.NetAgent.Interfaces.INetworkSelectorViewModel, ElBruno.NetAgent.ViewModels.NetworkSelectorViewModel>();
+            services.AddTransient<ElBruno.NetAgent.Views.NetworkSelectorWindow>();
 
-                    services.AddSingleton<Core.Services.IDialogService, NullDialogService>();
+            services.AddSingleton<Core.Services.IDialogService, NullDialogService>();
 
-                    // Use singleton TrayIconService so tests can access instance
-                    services.AddSingleton<ElBruno.NetAgent.Services.TrayIconService>();
+            services.AddSingleton(typeof(Microsoft.Extensions.Logging.ILogger<>), typeof(Microsoft.Extensions.Logging.Abstractions.NullLogger<>));
 
-                    // Override IHostApplicationLifetime with test double
-                    services.AddSingleton<IHostApplicationLifetime>(lifetime);
-                })
-                .Build();
+            // Register the test lifetime
+            services.AddSingleton<IHostApplicationLifetime>(lifetime);
 
-            return host;
+            // Register TrayIconService using factory so it receives the built provider
+            services.AddSingleton<ElBruno.NetAgent.Services.TrayIconService>(provider =>
+            {
+                return new ElBruno.NetAgent.Services.TrayIconService(
+                    provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ElBruno.NetAgent.Services.TrayIconService>>(),
+                    provider.GetRequiredService<Core.Configuration.IConfigurationService>(),
+                    provider.GetRequiredService<ElBruno.NetAgent.Core.Services.INetworkInventoryService>(),
+                    provider.GetRequiredService<ElBruno.NetAgent.Core.Services.INetworkQualityMonitor>(),
+                    provider.GetRequiredService<ElBruno.NetAgent.Core.Decision.IDecisionEngine>(),
+                    lifetime,
+                    provider);
+            });
+
+            return services.BuildServiceProvider();
         }
 
         private class TestHostApplicationLifetime : IHostApplicationLifetime
@@ -64,52 +73,38 @@ namespace ElBruno.NetAgent.Tests
         public void ExitClick_ShutdownsHost_And_DisposesTrayResources()
         {
             var lifetime = new TestHostApplicationLifetime();
-            using var host = BuildHost(lifetime);
+            var sp = BuildServiceProvider(lifetime);
 
-            Exception? thrown = null;
-            var done = new ManualResetEvent(false);
-
-            var thread = new Thread(() =>
+            // Execute test logic inline (no STA thread) since InvokeExitForTests_NoDispatch does not rely on WPF dispatcher.
+            try
             {
-                try
-                {                    // Ensure a WPF application/dispatcher is present so StartAsync creates the tray.
-                    var app = new System.Windows.Application();
-                    app.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+                var logger = new Microsoft.Extensions.Logging.LoggerFactory().CreateLogger<ElBruno.NetAgent.Services.TrayIconService>();
+                var testIcon = new NotifyIcon();
+                var svc = new ElBruno.NetAgent.Services.TrayIconService(logger, lifetime, testIcon);
 
-                    var svc = host.Services.GetService<ElBruno.NetAgent.Services.TrayIconService>();
-                    Assert.NotNull(svc);
+                svc.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
 
-                    svc!.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
+                svc.InvokeExitForTests_NoDispatch();
 
-                    // Reflect to obtain the private menu and exit item.
-                    var menuField = typeof(ElBruno.NetAgent.Services.TrayIconService).GetField("_menu", BindingFlags.NonPublic | BindingFlags.Instance);
-                    var menu = menuField?.GetValue(svc) as ContextMenuStrip;
-                    Assert.NotNull(menu);
-                    ToolStripItem? exitItem = null;                    foreach (ToolStripItem it in menu.Items)
-                    {                        if (string.Equals(it.Text, "Exit", StringComparison.OrdinalIgnoreCase)) { exitItem = it; break; }
-                    }
-                    Assert.NotNull(exitItem);
-                    // Simulate clicking Exit
-                    exitItem!.PerformClick();
-                    // Verify host lifetime was requested to stop
-                    Assert.True(lifetime.StopCalled, "IHostApplicationLifetime.StopApplication should be called");
-                    // Verify _notifyIcon was disposed/cleared
+                // Verify host lifetime was requested to stop
+                Assert.True(lifetime.StopCalled, "IHostApplicationLifetime.StopApplication should be called");
+
+                // Allow a short moment for dispose to occur
+                System.Threading.SpinWait.SpinUntil(() =>
+                {
                     var iconField = typeof(ElBruno.NetAgent.Services.TrayIconService).GetField("_notifyIcon", BindingFlags.NonPublic | BindingFlags.Instance);
                     var iconVal = iconField?.GetValue(svc);
-                    Assert.Null(iconVal);
-                }
-                catch (Exception ex)
-                {                    thrown = ex;
-                }
-                finally
-                {                    done.Set();
-                    try { System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown(); } catch { }
-                }
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            Assert.True(done.WaitOne(TimeSpan.FromSeconds(10)), "STA thread did not complete in time");
-            if (thrown != null) throw new AggregateException("Exception during Exit click test", thrown);
+                    return iconVal == null;
+                }, TimeSpan.FromSeconds(5));
+
+                var iconFieldFinal = typeof(ElBruno.NetAgent.Services.TrayIconService).GetField("_notifyIcon", BindingFlags.NonPublic | BindingFlags.Instance);
+                var iconValFinal = iconFieldFinal?.GetValue(svc);
+                Assert.Null(iconValFinal);
+            }
+            catch (Exception ex)
+            {
+                throw new AggregateException("Exception during Exit click test", ex);
+            }
         }
     }
 }

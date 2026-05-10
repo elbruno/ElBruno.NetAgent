@@ -13,15 +13,18 @@ namespace ElBruno.NetAgent.Tests
         {
             public NetAgentOptions OptionsToReturn { get; set; }
             public NetAgentOptions? LastSavedOptions { get; private set; }
-n            public FakeConfigService(NetAgentOptions opts)
+
+            public FakeConfigService(NetAgentOptions opts)
             {
                 OptionsToReturn = opts;
             }
-n            public Task<NetAgentOptions> GetOptionsAsync(CancellationToken cancellationToken = default)
+
+            public Task<NetAgentOptions> GetOptionsAsync(CancellationToken cancellationToken = default)
             {
                 return Task.FromResult(OptionsToReturn);
             }
-n            public Task<NetAgentOptions> ReloadAsync(CancellationToken cancellationToken = default)
+
+            public Task<NetAgentOptions> ReloadAsync(CancellationToken cancellationToken = default)
             {
                 return Task.FromResult(OptionsToReturn);
             }
@@ -44,7 +47,8 @@ namespace ElBruno.NetAgent.Tests
             var opts = new NetAgentOptions();
             var fake = new FakeConfigService(opts);
             var vm = new SettingsViewModel(fake);
-n            Assert.True(vm.DryRunMode, "DryRun default should be true");
+
+            Assert.True(vm.DryRunMode, "DryRun default should be true");
             Assert.True(vm.IgnoreVirtualAdapters, "IgnoreVirtualAdapters default should be true");
             Assert.Contains("Loopback", vm.ExcludedInterfaceKinds);
             Assert.Contains("Vpn", vm.ExcludedInterfaceKinds);
@@ -56,13 +60,16 @@ namespace ElBruno.NetAgent.Tests
             var opts = new NetAgentOptions();
             var fake = new FakeConfigService(opts);
             var vm = new SettingsViewModel(fake);
-n            vm.DryRunMode = false;
+
+            vm.DryRunMode = false;
             vm.AutoModeEnabled = true;
             vm.AutoModeIntervalSeconds = 20;
             vm.PreferredInterfacePatternsText = "eth0,wlan0";
             vm.ExcludedInterfacePatternsText = "vEthernet0";
-            vm.SaveCommand.Execute(null);
-            Assert.NotNull(fake.LastSavedOptions);
+
+            vm.SaveCommand.Execute(null);
+
+            Assert.NotNull(fake.LastSavedOptions);
             var saved = fake.LastSavedOptions!.SwitchingRules;
             Assert.False(saved.DryRunMode);
             Assert.True(saved.AutoModeEnabled);
@@ -78,9 +85,11 @@ namespace ElBruno.NetAgent.Tests
             var opts = new NetAgentOptions();
             var fake = new FakeConfigService(opts);
             var vm = new SettingsViewModel(fake);
-n            vm.AutoModeIntervalSeconds = 5; // too small - should be normalized to default (DefaultCheckIntervalSeconds)
+
+            vm.AutoModeIntervalSeconds = 5; // too small - should be normalized to default (DefaultCheckIntervalSeconds)
             vm.SaveCommand.Execute(null);
-            Assert.NotNull(fake.LastSavedOptions);
+
+            Assert.NotNull(fake.LastSavedOptions);
             var saved = fake.LastSavedOptions!.SwitchingRules;
             Assert.Equal(NetAgentOptions.DefaultCheckIntervalSeconds, saved.AutoModeIntervalSeconds);
         }

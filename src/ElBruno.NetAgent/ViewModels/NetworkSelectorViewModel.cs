@@ -48,10 +48,28 @@ namespace ElBruno.NetAgent.ViewModels
 
         public Task RefreshAsync()
         {
-            return Task.Run(() =>
+            return Task.Run(async () =>
             {
-                var list = _inventory.GetInterfacesAsync(CancellationToken.None).GetAwaiter().GetResult();
-                Interfaces = new ObservableCollection<object>(list.Select(i => (object)new AdapterItem(i)));
+                var list = await _inventory.GetInterfacesAsync(CancellationToken.None).ConfigureAwait(false);
+                var items = new System.Collections.Generic.List<object>();
+
+                foreach (var adapter in list)
+                {
+                    var ai = new AdapterItem(adapter);
+                    try
+                    {
+                        var report = await _qualityMonitor.EvaluateAsync(adapter, CancellationToken.None).ConfigureAwait(false);
+                        var decision = await _decisionEngine.EvaluateAsync(report, _options, CancellationToken.None).ConfigureAwait(false);
+                        ai.UpdateReport(report, decision);
+                    }
+                    catch (Exception ex)
+                    {
+                        ai.LatestQualityReport = "Error sampling: " + ex.Message;
+                    }
+                    items.Add(ai);
+                }
+
+                Interfaces = new ObservableCollection<object>(items);
                 OnPropertyChanged(nameof(Interfaces));
             });
         }
@@ -62,7 +80,14 @@ namespace ElBruno.NetAgent.ViewModels
             {
                 var report = await _qualityMonitor.EvaluateAsync(item.ToModel(), CancellationToken.None).ConfigureAwait(false);
                 var decision = await _decisionEngine.EvaluateAsync(report, _options, CancellationToken.None).ConfigureAwait(false);
-                LastActionMessage = $"Dry-run: would {decision.Action} for {item.Name} (score={report.Score})";
+                if (decision.Reason != null && decision.Reason.StartsWith("Excluded:", StringComparison.OrdinalIgnoreCase))
+                {
+                    LastActionMessage = $"Dry-run: no switch - {decision.Reason} for {item.Name} (score={report.Score})";
+                }
+                else
+                {
+                    LastActionMessage = $"Dry-run: would {decision.Action} for {item.Name} (score={report.Score}) - {decision.Reason}";
+                }
                 OnPropertyChanged(nameof(LastActionMessage));
             }
             catch (Exception ex)
@@ -91,7 +116,9 @@ namespace ElBruno.NetAgent.ViewModels
             public string Description => _model.Description ?? string.Empty;
             public string Kind => _model.Kind.ToString();
             public string OperationalStatus => _model.OperationalStatus.ToString();
-            public string LatestQualityReport { get; private set; } = string.Empty;
+            public string LatestQualityReport { get; set; } = string.Empty;
+            public string ExclusionReason { get; private set; } = string.Empty;
+            public bool IsExcluded => !string.IsNullOrWhiteSpace(ExclusionReason);
 
             public AdapterItem(NetworkInterfaceInfo model)
             {
@@ -100,9 +127,14 @@ namespace ElBruno.NetAgent.ViewModels
 
             public NetworkInterfaceInfo ToModel() => _model;
 
-            public void UpdateReport(NetworkQualityReport report)
+            public void UpdateReport(NetworkQualityReport report, Core.Decision.DecisionResult decision)
             {
                 LatestQualityReport = $"Latency={report.LatencyMs}ms Loss={report.PacketLossPercent}% Score={report.Score}";
+                if (decision?.Reason != null && decision.Reason.StartsWith("Excluded:", StringComparison.OrdinalIgnoreCase))
+                {
+                    ExclusionReason = decision.Reason;
+                    LatestQualityReport += $" - {ExclusionReason}";
+                }
             }
         }
     }

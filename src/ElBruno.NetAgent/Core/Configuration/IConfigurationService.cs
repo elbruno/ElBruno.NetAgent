@@ -7,6 +7,7 @@ namespace ElBruno.NetAgent.Core.Configuration
     {
         Task<NetAgentOptions> GetOptionsAsync(CancellationToken cancellationToken = default);
         Task<NetAgentOptions> ReloadAsync(CancellationToken cancellationToken = default);
+        Task SaveOptionsAsync(NetAgentOptions options, CancellationToken cancellationToken = default);
 
         // Helper methods for UI/testing
         string GetConfigFolderPath();

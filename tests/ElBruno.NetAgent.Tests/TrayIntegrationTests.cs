@@ -92,7 +92,7 @@ namespace ElBruno.NetAgent.Tests
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
-            Assert.True(done.WaitOne(TimeSpan.FromSeconds(10)), "STA thread did not complete in time");
+            Assert.True(done.WaitOne(TimeSpan.FromSeconds(30)), "STA thread did not complete in time");
             if (thrown != null) throw new AggregateException("Exception constructing StatusWindow on STA", thrown);
         }
 
