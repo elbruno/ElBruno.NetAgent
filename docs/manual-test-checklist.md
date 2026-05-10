@@ -24,3 +24,19 @@ Notes:
 - The app preserves DryRunMode=true and AutoModeEnabled=false by default.
 - Tests validate DI resolution and core tray actions without performing any network mutations.
 - To provide a custom tray icon, add an .ico at assets/icons/netagent.ico and restart the app.
+
+## Unit tests vs Desktop/Tray integration tests
+
+Unit tests are executed by default in CI using disable-parallel.runsettings which disables parallel execution and excludes desktop-only tests (Category=Desktop or Category=Integration).
+
+Desktop/tray integration tests must be run separately on a desktop-capable runner (Windows with interactive session and UI automation support). To run unit tests locally:
+
+```text
+dotnet test -c Release --no-build --settings disable-parallel.runsettings
+```
+
+To run desktop/tray tests on a desktop runner (example):
+
+```text
+dotnet test -c Release --no-build --filter "Category=Integration|Category=Desktop" --verbosity normal
+```
