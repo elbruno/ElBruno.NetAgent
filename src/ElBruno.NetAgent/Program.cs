@@ -60,6 +60,8 @@ namespace ElBruno.NetAgent
                     services.AddTransient<ElBruno.NetAgent.Views.NetworkSelectorWindow>();
 
                     services.TryAddSingleton<Core.Services.IDialogService, Services.NullDialogService>();
+                    // Wire host stopping to WPF Application shutdown on the UI thread.
+                    services.AddHostedService<Services.HostApplicationShutdownWiring>();
                     services.AddHostedService<Services.TrayIconService>();
 
                     // Auto mode background service - evaluates decision engine on an interval and (dry-run first) requests switches.
