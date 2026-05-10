@@ -69,6 +69,17 @@ namespace ElBruno.NetAgent.Tests
             public void StopApplication() => StopCalled = true;
         }
 
+        private class TestNotifyIconAdapter : ElBruno.NetAgent.Services.INotifyIconAdapter
+        {
+            public bool Visible { get; set; }
+            public string Text { get; set; }
+            public System.Drawing.Icon Icon { get; set; }
+            public ContextMenuStrip ContextMenuStrip { get; set; }
+            public bool IsDisposed { get; private set; }
+            public void ShowBalloonTip(int timeout, string title, string text, ToolTipIcon icon) { }
+            public void Dispose() { IsDisposed = true; }
+        }
+
         [Fact]
         public void ExitClick_ShutdownsHost_And_DisposesTrayResources()
         {
@@ -79,8 +90,8 @@ namespace ElBruno.NetAgent.Tests
             try
             {
                 var logger = new Microsoft.Extensions.Logging.LoggerFactory().CreateLogger<ElBruno.NetAgent.Services.TrayIconService>();
-                var testIcon = new NotifyIcon();
-                var svc = new ElBruno.NetAgent.Services.TrayIconService(logger, lifetime, testIcon);
+                var testAdapter = new TestNotifyIconAdapter();
+                var svc = new ElBruno.NetAgent.Services.TrayIconService(logger, lifetime, testAdapter);
 
                 svc.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
 
@@ -89,17 +100,17 @@ namespace ElBruno.NetAgent.Tests
                 // Verify host lifetime was requested to stop
                 Assert.True(lifetime.StopCalled, "IHostApplicationLifetime.StopApplication should be called");
 
+                // Sanity: ensure the adapter reported disposed (if used)
+                Assert.True(testAdapter.IsDisposed, "NotifyIcon adapter should be disposed after Exit");
+
                 // Allow a short moment for dispose to occur
                 System.Threading.SpinWait.SpinUntil(() =>
                 {
-                    var iconField = typeof(ElBruno.NetAgent.Services.TrayIconService).GetField("_notifyIcon", BindingFlags.NonPublic | BindingFlags.Instance);
-                    var iconVal = iconField?.GetValue(svc);
-                    return iconVal == null;
+                    return !svc.IsNotifyIconPresentForTests();
                 }, TimeSpan.FromSeconds(5));
 
-                var iconFieldFinal = typeof(ElBruno.NetAgent.Services.TrayIconService).GetField("_notifyIcon", BindingFlags.NonPublic | BindingFlags.Instance);
-                var iconValFinal = iconFieldFinal?.GetValue(svc);
-                Assert.Null(iconValFinal);
+                // Adapter should be disposed or the service should report no tray icon present.
+                Assert.True(testAdapter.IsDisposed || !svc.IsNotifyIconPresentForTests(), "Notify icon should be disposed or not present");
             }
             catch (Exception ex)
             {

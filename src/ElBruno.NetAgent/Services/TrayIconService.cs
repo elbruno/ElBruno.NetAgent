@@ -15,6 +15,7 @@ namespace ElBruno.NetAgent.Services
         private readonly ILogger<TrayIconService> _logger;
         private readonly IHostApplicationLifetime? _appLifetime;
         private NotifyIcon? _notifyIcon;
+        private INotifyIconAdapter? _notifyIconAdapter;
         private ContextMenuStrip? _menu;
         private bool _autoMode;
         private readonly IServiceProvider? _serviceProvider;
@@ -49,6 +50,13 @@ namespace ElBruno.NetAgent.Services
             : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), appLifetime, null)
         {
             _notifyIcon = notifyIcon;
+        }
+
+        // Internal ctor for tests to inject a test IHostApplicationLifetime and a test INotifyIconAdapter for deterministic disposal in unit tests.
+        internal TrayIconService(ILogger<TrayIconService> logger, IHostApplicationLifetime appLifetime, INotifyIconAdapter notifyIconAdapter)
+            : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), appLifetime, null)
+        {
+            _notifyIconAdapter = notifyIconAdapter;
         }
 
         // A lightweight null implementation used when DI is not available (tests).
@@ -424,7 +432,17 @@ namespace ElBruno.NetAgent.Services
             {
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (_notifyIcon != null)
+                        if (_notifyIconAdapter != null)
+                    {
+                        try
+                        {
+                            _notifyIconAdapter.Visible = false;
+                            _notifyIconAdapter.Dispose();
+                        }
+                        catch (Exception ex) { _logger.LogWarning(ex, "Error disposing notify icon adapter during Stop"); }
+                        _notifyIconAdapter = null;
+                    }
+                    else if (_notifyIcon != null)
                     {
                         _notifyIcon.Visible = false;
                         _notifyIcon.Dispose();
@@ -521,8 +539,26 @@ namespace ElBruno.NetAgent.Services
                 // Dispose tray resources directly to avoid dispatcher deadlocks in unit tests.
                 try
                 {
-                    if (_notifyIcon != null)
+                    if (_notifyIconAdapter != null)
                     {
+                        _logger.LogInformation("Disposing notify icon adapter (test)");
+                        try
+                        {
+                            _notifyIconAdapter.Visible = false;
+                            _notifyIconAdapter.Dispose();
+                            _logger.LogInformation("Notify icon adapter disposed (test)");
+                        }
+                        catch (Exception ex) { _logger.LogWarning(ex, "Error disposing notify icon adapter during Exit (test)"); }
+                        _notifyIconAdapter = null;
+                        if (_notifyIcon != null)
+                        {
+                            try { _notifyIcon.Visible = false; _notifyIcon.Dispose(); } catch { }
+                            _notifyIcon = null;
+                        }
+                    }
+                    else if (_notifyIcon != null)
+                    {
+                        _logger.LogInformation("Disposing notify icon (test)");
                         _notifyIcon.Visible = false;
                         _notifyIcon.Dispose();
                         _notifyIcon = null;
@@ -563,10 +599,20 @@ namespace ElBruno.NetAgent.Services
             }
         }
 
+        internal bool IsNotifyIconPresentForTests()
+        {
+            return _notifyIcon != null || (_notifyIconAdapter != null && !_notifyIconAdapter.IsDisposed);
+        }
+
         public void Dispose()
         {
-            _notifyIcon?.Dispose();
-            _menu?.Dispose();
+            try
+            {
+                _notifyIconAdapter?.Dispose();
+            }
+            catch { }
+            try { _notifyIcon?.Dispose(); } catch { }
+            try { _menu?.Dispose(); } catch { }
         }
     }
 }
