@@ -17,5 +17,15 @@ namespace ElBruno.NetAgent.Services
         {
             // no-op: safe default for test/non-UI environments
         }
+
+        public void OpenConfigFolder()
+        {
+            // no-op
+        }
+
+        public void ShowAbout()
+        {
+            // no-op
+        }
     }
 }

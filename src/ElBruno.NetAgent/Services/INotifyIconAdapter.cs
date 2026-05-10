@@ -22,6 +22,12 @@ namespace ElBruno.NetAgent.Services
         public NotifyIconAdapter(NotifyIcon inner)
         {
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+            try
+            {
+                // Track underlying dispose so IsDisposed reflects external disposals as well.
+                _inner.Disposed += (s, e) => { _disposed = true; };
+            }
+            catch { }
         }
 
         public bool Visible

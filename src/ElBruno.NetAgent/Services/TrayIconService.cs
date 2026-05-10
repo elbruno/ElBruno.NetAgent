@@ -19,12 +19,16 @@ namespace ElBruno.NetAgent.Services
         private ContextMenuStrip? _menu;
         private bool _autoMode;
         private readonly IServiceProvider? _serviceProvider;
+        private readonly Core.Services.IDialogService _dialogService;
+        private readonly Core.Services.ILinkService _linkService;
 
         public TrayIconService(ILogger<TrayIconService> logger,
             Core.Configuration.IConfigurationService configurationService,
             Core.Services.INetworkInventoryService inventoryService,
             Core.Services.INetworkQualityMonitor qualityMonitor,
             Core.Decision.IDecisionEngine decisionEngine,
+            Core.Services.IDialogService dialogService,
+            Core.Services.ILinkService linkService,
             IHostApplicationLifetime? appLifetime = null,
             IServiceProvider? serviceProvider = null)
         {
@@ -34,6 +38,8 @@ namespace ElBruno.NetAgent.Services
             _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
             _qualityMonitor = qualityMonitor ?? throw new ArgumentNullException(nameof(qualityMonitor));
             _decisionEngine = decisionEngine ?? throw new ArgumentNullException(nameof(decisionEngine));
+            _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+            _linkService = linkService ?? throw new ArgumentNullException(nameof(linkService));
             _serviceProvider = serviceProvider;
         }
 
@@ -43,18 +49,18 @@ namespace ElBruno.NetAgent.Services
         private readonly Core.Decision.IDecisionEngine _decisionEngine;
 
         // Back-compat constructor used by unit tests that instantiate the service directly.
-        public TrayIconService(ILogger<TrayIconService> logger) : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), null) { }
+        public TrayIconService(ILogger<TrayIconService> logger) : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), new ElBruno.NetAgent.Services.NullDialogService(), new ElBruno.NetAgent.Services.NullLinkService(), null, null) { }
 
         // Internal ctor for tests to inject a test IHostApplicationLifetime and a test NotifyIcon instance (no changes to public API).
         internal TrayIconService(ILogger<TrayIconService> logger, IHostApplicationLifetime appLifetime, NotifyIcon notifyIcon)
-            : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), appLifetime, null)
+            : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), new ElBruno.NetAgent.Services.NullDialogService(), new ElBruno.NetAgent.Services.NullLinkService(), appLifetime, null)
         {
             _notifyIcon = notifyIcon;
         }
 
         // Internal ctor for tests to inject a test IHostApplicationLifetime and a test INotifyIconAdapter for deterministic disposal in unit tests.
         internal TrayIconService(ILogger<TrayIconService> logger, IHostApplicationLifetime appLifetime, INotifyIconAdapter notifyIconAdapter)
-            : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), appLifetime, null)
+            : this(logger, new NullConfigurationService(), new ElBruno.NetAgent.Services.NullInventoryService(), new ElBruno.NetAgent.Services.NullQualityMonitor(), new ElBruno.NetAgent.Services.NullDecisionEngine(), new ElBruno.NetAgent.Services.NullDialogService(), new ElBruno.NetAgent.Services.NullLinkService(), appLifetime, null)
         {
             _notifyIconAdapter = notifyIconAdapter;
         }
@@ -169,26 +175,16 @@ namespace ElBruno.NetAgent.Services
                     _logger.LogInformation("Auto Mode toggled: {Auto}", _autoMode);
                 };
 
-                var showConfig = new ToolStripMenuItem("Show Config Status");
-                showConfig.Click += async (s, e) =>
-                {
-                    try
-                    {
-                        var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
-                        var msg = $"DryRun: {opts.DryRunMode}  AutoMode: {opts.AutoModeEnabled}  Threshold: {opts.LatencyThresholdMs}ms";
-                        System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(5000, "Config Status", msg, ToolTipIcon.Info));
-                    }
-                    catch (Exception ex) { _logger.LogWarning(ex, "ShowConfig failed"); }
-                };
 
-                var openLogs = new ToolStripMenuItem("Open Logs");
-                openLogs.Click += (s, e) => _logger.LogInformation("Open Logs clicked");
+
+                var openLogs = new ToolStripMenuItem("Open Logs Folder");
+                openLogs.Click += (s, e) => { _logger.LogInformation("Open Logs clicked"); try { _dialogService.OpenLogs(); } catch (Exception ex) { _logger.LogWarning(ex, "OpenLogs failed"); } };
 
                 var openAppData = new ToolStripMenuItem("Open App Data Folder");
                 openAppData.Click += (s, e) =>
                 {
                     _logger.LogInformation("Open App Data Folder clicked");
-                    try { _configurationService.OpenConfigFolder(); } catch (Exception ex) { _logger.LogWarning(ex, "OpenAppData failed"); }
+                    try { _dialogService.OpenConfigFolder(); } catch (Exception ex) { _logger.LogWarning(ex, "OpenAppData failed"); }
                 };
 
                 var openConfig = new ToolStripMenuItem("Open Config");
@@ -219,7 +215,7 @@ namespace ElBruno.NetAgent.Services
                             try
                             {
                                 var report = await _qualityMonitor.EvaluateAsync(adapter, CancellationToken.None).ConfigureAwait(false);
-                                var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                                var opts = await _configuration_service_get_options_async().ConfigureAwait(false);
                                 var decision = await _decisionEngine.EvaluateAsync(report, opts, CancellationToken.None).ConfigureAwait(false);
 
                                 if (decision?.Reason != null && decision.Reason.StartsWith("Excluded:", StringComparison.OrdinalIgnoreCase))
@@ -245,7 +241,7 @@ namespace ElBruno.NetAgent.Services
                             return;
                         }
 
-                        var optsFinal = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                        var optsFinal = await _configuration_service_get_options_async().ConfigureAwait(false);
                         var finalDecision = await _decisionEngine.EvaluateAsync(bestReport!, optsFinal, CancellationToken.None).ConfigureAwait(false);
                         var msgFinal = $"Best: {bestAdapter!.Name} score={bestReport!.Score} -> Action={finalDecision.Action} ({finalDecision.Reason})";
                         System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(6000, "Preview Best Switch", msgFinal, ToolTipIcon.Info));
@@ -253,10 +249,10 @@ namespace ElBruno.NetAgent.Services
                     catch (Exception ex) { _logger.LogWarning(ex, "PreviewBest failed"); }
                 };
 
-                var interfacesMenu = new ToolStripMenuItem("Interfaces");
-                interfacesMenu.DropDownOpening += async (s, e) =>
+                var interfacesSubmenu = new ToolStripMenuItem("Interfaces");
+                interfacesSubmenu.DropDownOpening += async (s, e) =>
                 {
-                    interfacesMenu.DropDownItems.Clear();
+                    interfacesSubmenu.DropDownItems.Clear();
                     try
                     {
                         var list = await _inventoryService.GetInterfacesAsync(CancellationToken.None).ConfigureAwait(false);
@@ -265,7 +261,7 @@ namespace ElBruno.NetAgent.Services
                             try
                             {
                                 var report = await _qualityMonitor.EvaluateAsync(adapter, CancellationToken.None).ConfigureAwait(false);
-                                var opts = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                                var opts = await _configuration_service_get_options_async();
                                 var decision = await _decisionEngine.EvaluateAsync(report, opts, CancellationToken.None).ConfigureAwait(false);
 
                                 var display = $"{adapter.Name} ({adapter.Kind})";
@@ -282,25 +278,25 @@ namespace ElBruno.NetAgent.Services
                                     {
                                         var a = (Core.Models.NetworkInterfaceInfo)item.Tag;
                                         var r = await _qualityMonitor.EvaluateAsync(a, CancellationToken.None).ConfigureAwait(false);
-                                        var opts2 = await _configurationService.GetOptionsAsync(CancellationToken.None).ConfigureAwait(false);
+                                        var opts2 = await _configuration_service_get_options_async();
                                         var dec = await _decisionEngine.EvaluateAsync(r, opts2, CancellationToken.None).ConfigureAwait(false);
                                         var msg = $"Adapter: {a.Name}\nLatency: {r.LatencyMs}ms Loss: {r.PacketLossPercent}% Score: {r.Score}\nDecision: {dec.Action} - {dec.Reason}";
                                         System.Windows.Application.Current.Dispatcher.Invoke(() => _notifyIcon?.ShowBalloonTip(8000, "Adapter Preview", msg, ToolTipIcon.Info));
                                     }
                                     catch (Exception ex) { _logger.LogWarning(ex, "Adapter preview failed"); }
                                 };
-                                interfacesMenu.DropDownItems.Add(item);
+                                interfacesSubmenu.DropDownItems.Add(item);
                             }
-                            catch (Exception ex) { _logger.LogWarning(ex, "Error evaluating adapter for menu"); var item = new ToolStripMenuItem($"{adapter.Name} ({adapter.Kind}) - error"); interfacesMenu.DropDownItems.Add(item); }
+                            catch (Exception ex) { _logger.LogWarning(ex, "Error evaluating adapter for menu"); var item = new ToolStripMenuItem($"{adapter.Name} ({adapter.Kind}) - error"); interfacesSubmenu.DropDownItems.Add(item); }
                         }
 
                         if (list == null || list.Count == 0)
-                            interfacesMenu.DropDownItems.Add(new ToolStripMenuItem("(no interfaces)"));
+                            interfacesSubmenu.DropDownItems.Add(new ToolStripMenuItem("(no interfaces)"));
                     }
                     catch (Exception ex)
                     {
                         _logger.LogWarning(ex, "Failed populating interfaces");
-                        interfacesMenu.DropDownItems.Add(new ToolStripMenuItem("Error"));
+                        interfacesSubmenu.DropDownItems.Add(new ToolStripMenuItem("Error"));
                     }
                 };
 
@@ -311,47 +307,57 @@ namespace ElBruno.NetAgent.Services
                     // Dispose tray resources on UI thread prior to shutting down the host/UI loop.
                     try
                     {
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        // Schedule dispose and shutdown on the UI dispatcher without blocking calling thread.
+                        try
                         {
-                            try
+                            System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                             {
-                                if (_notifyIcon != null)
-                                {
-                                    _notifyIcon.Visible = false;
-                                    _notifyIcon.Dispose();
-                                    _notifyIcon = null;
-                                }
-
-                                if (_menu != null)
-                                {
-                                    _menu.Dispose();
-                                    _menu = null;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "Error disposing tray resources during Exit");
-                            }
-
-                            // Request host/application shutdown. If an IHostApplicationLifetime is available,
-                            // let the generic host orchestrate stopping hosted services. Otherwise call Shutdown directly.
-                            _appLifetime?.StopApplication();
-
-                            if (_appLifetime == null)
-                            {
-                                // Close any open WPF windows cleanly before shutting down.
                                 try
                                 {
-                                    foreach (var w in System.Windows.Application.Current.Windows)
+                                    if (_notifyIcon != null)
                                     {
-                                        try { (w as System.Windows.Window)?.Close(); } catch { }
+                                        _notifyIcon.Visible = false;
+                                        _notifyIcon.Dispose();
+                                        _notifyIcon = null;
+                                    }
+
+                                    if (_menu != null)
+                                    {
+                                        _menu.Dispose();
+                                        _menu = null;
                                     }
                                 }
-                                catch { }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "Error disposing tray resources during Exit");
+                                }
 
-                                try { System.Windows.Application.Current.Shutdown(); } catch { }
-                            }
-                        });
+                                // Request host/application shutdown. If an IHostApplicationLifetime is available,
+                                // let the generic host orchestrate stopping hosted services. Otherwise call Shutdown directly.
+                                _appLifetime?.StopApplication();
+
+                                if (_appLifetime == null)
+                                {
+                                    // Close any open WPF windows cleanly before shutting down.
+                                    try
+                                    {
+                                        foreach (var w in System.Windows.Application.Current.Windows)
+                                        {
+                                            try { (w as System.Windows.Window)?.Close(); } catch { }
+                                        }
+                                    }
+                                    catch { }
+
+                                    try { System.Windows.Application.Current.Shutdown(); } catch { }
+                                }
+                            }));
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Error scheduling Exit handling on dispatcher");
+                            // Best-effort stop in case dispatcher invocation failed.
+                            _appLifetime?.StopApplication();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -361,7 +367,85 @@ namespace ElBruno.NetAgent.Services
                     }
                 };
 
-                _menu.Items.AddRange(new ToolStripItem[] { openStatus, refreshNow, autoModeItem, showConfig, interfacesMenu, previewBest, openLogs, openAppData, openConfig, exit });
+                // Add top-level menu items in the requested order. Interfaces submenu remains nested under "Interfaces" for previews.
+                // Create Open Network Selector and Open Settings top-level items
+                var openNetworkSelector = new ToolStripMenuItem("Open Network Selector");
+                openNetworkSelector.Click += (s, e) =>
+                {
+                    try
+                    {
+                        if (_serviceProvider == null)
+                        {
+                            _logger.LogInformation("Service provider not available for Network Selector window.");
+                            return;
+                        }
+
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            try
+                            {
+                                var window = _serviceProvider.GetService(typeof(ElBruno.NetAgent.Views.NetworkSelectorWindow)) as ElBruno.NetAgent.Views.NetworkSelectorWindow;
+                                if (window == null)
+                                {
+                                    var vm = _serviceProvider.GetService(typeof(ElBruno.NetAgent.Interfaces.INetworkSelectorViewModel)) as ElBruno.NetAgent.Interfaces.INetworkSelectorViewModel;
+                                    window = new ElBruno.NetAgent.Views.NetworkSelectorWindow(vm);
+                                }
+                                window.Show();
+                            }
+                            catch (Exception ex) { _logger.LogWarning(ex, "Failed to open Network Selector window"); }
+                        });
+                    }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Open Network Selector clicked failed"); }
+                };
+
+                var openSettings = new ToolStripMenuItem("Open Settings");
+                openSettings.Click += (s, e) =>
+                {
+                    try
+                    {
+                        if (_serviceProvider == null)
+                        {
+                            _logger.LogInformation("Service provider not available for Settings window.");
+                            return;
+                        }
+
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            try
+                            {
+                                var window = _serviceProvider.GetService(typeof(ElBruno.NetAgent.Views.SettingsWindow)) as ElBruno.NetAgent.Views.SettingsWindow;
+                                if (window == null)
+                                {
+                                    var vm = _serviceProvider.GetService(typeof(ElBruno.NetAgent.Interfaces.ISettingsViewModel)) as ElBruno.NetAgent.Interfaces.ISettingsViewModel;
+                                    window = new ElBruno.NetAgent.Views.SettingsWindow(vm);
+                                }
+                                window.Show();
+                            }
+                            catch (Exception ex) { _logger.LogWarning(ex, "Failed to open Settings window"); }
+                        });
+                    }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Open Settings clicked failed"); }
+                };
+
+                var openGithub = new ToolStripMenuItem("Open GitHub Repository");
+                openGithub.Click += (s, e) => { try { _linkService.OpenLink("https://github.com/elbruno/ElBruno.NetAgent"); } catch (Exception ex) { _logger.LogWarning(ex, "OpenGitHub failed"); } };
+
+                var aboutItem = new ToolStripMenuItem("About ElBruno.NetAgent");
+                aboutItem.Click += (s, e) => { try { _dialogService.ShowAbout(); } catch (Exception ex) { _logger.LogWarning(ex, "ShowAbout failed"); } };
+
+                var help = new ToolStripMenuItem("Help");
+                // reuse existing openLogs/openAppData if defined; otherwise create fallback items
+                try
+                {
+                    help.DropDownItems.AddRange(new ToolStripItem[] { openLogs ?? new ToolStripMenuItem("Open Logs Folder"), openAppData ?? new ToolStripMenuItem("Open App Data Folder"), openGithub, aboutItem });
+                }
+                catch
+                {
+                    // If openLogs/openAppData are not defined earlier, just add the items created here
+                    help.DropDownItems.AddRange(new ToolStripItem[] { new ToolStripMenuItem("Open Logs Folder") { Enabled = false }, new ToolStripMenuItem("Open App Data Folder") { Enabled = false }, openGithub, aboutItem });
+                }
+
+                _menu.Items.AddRange(new ToolStripItem[] { openStatus, openNetworkSelector, openSettings, previewBest, autoModeItem, help, exit });
 
                 if (_notifyIcon == null)
                 {
@@ -430,31 +514,38 @@ namespace ElBruno.NetAgent.Services
 
             if (System.Windows.Application.Current?.Dispatcher != null)
             {
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                try
                 {
+                    System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                    {
                         if (_notifyIconAdapter != null)
-                    {
-                        try
                         {
-                            _notifyIconAdapter.Visible = false;
-                            _notifyIconAdapter.Dispose();
+                            try
+                            {
+                                _notifyIconAdapter.Visible = false;
+                                _notifyIconAdapter.Dispose();
+                            }
+                            catch (Exception ex) { _logger.LogWarning(ex, "Error disposing notify icon adapter during Stop"); }
+                            _notifyIconAdapter = null;
                         }
-                        catch (Exception ex) { _logger.LogWarning(ex, "Error disposing notify icon adapter during Stop"); }
-                        _notifyIconAdapter = null;
-                    }
-                    else if (_notifyIcon != null)
-                    {
-                        _notifyIcon.Visible = false;
-                        _notifyIcon.Dispose();
-                        _notifyIcon = null;
-                    }
+                        else if (_notifyIcon != null)
+                        {
+                            _notifyIcon.Visible = false;
+                            _notifyIcon.Dispose();
+                            _notifyIcon = null;
+                        }
 
-                    if (_menu != null)
-                    {
-                        _menu.Dispose();
-                        _menu = null;
-                    }
-                });
+                        if (_menu != null)
+                        {
+                            _menu.Dispose();
+                            _menu = null;
+                        }
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error scheduling StopAsync dispose on dispatcher");
+                }
             }
             return Task.CompletedTask;
         }
@@ -602,6 +693,12 @@ namespace ElBruno.NetAgent.Services
         internal bool IsNotifyIconPresentForTests()
         {
             return _notifyIcon != null || (_notifyIconAdapter != null && !_notifyIconAdapter.IsDisposed);
+        }
+
+        // Compatibility wrapper used by the updated code to centralize configuration reads
+        private Task<Core.Configuration.NetAgentOptions> _configuration_service_get_options_async()
+        {
+            return _configurationService.GetOptionsAsync(CancellationToken.None);
         }
 
         public void Dispose()

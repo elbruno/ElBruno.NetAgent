@@ -7,5 +7,7 @@ namespace ElBruno.NetAgent.Core.Services
     {
         void OpenLogs();
         void OpenConfig();
+        void OpenConfigFolder();
+        void ShowAbout();
     }
 }

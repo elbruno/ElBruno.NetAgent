@@ -14,8 +14,9 @@ namespace ElBruno.NetAgent
         [STAThread]
         public static int Main(string[] args)
         {
-            // detect smoke-test flag early and avoid starting hosted services or WPF loop when present
+            // detect smoke-test flags early and avoid starting hosted services or WPF loop when present
             var smokeTest = args != null && args.Any(a => string.Equals(a, "--smoke-test", StringComparison.OrdinalIgnoreCase));
+            var smokeTestExit = args != null && args.Any(a => string.Equals(a, "--smoke-test-exit", StringComparison.OrdinalIgnoreCase));
 
             var host = Host.CreateDefaultBuilder(args)
                 .ConfigureLogging(logging => logging.AddConsole())
@@ -60,6 +61,7 @@ namespace ElBruno.NetAgent
                     services.AddTransient<ElBruno.NetAgent.Views.NetworkSelectorWindow>();
 
                     services.TryAddSingleton<Core.Services.IDialogService, Services.NullDialogService>();
+                    services.TryAddSingleton<Core.Services.ILinkService, Services.NullLinkService>();
                     // Wire host stopping to WPF Application shutdown on the UI thread.
                     services.AddHostedService<Services.HostApplicationShutdownWiring>();
                     services.AddHostedService<Services.TrayIconService>();
@@ -118,6 +120,74 @@ namespace ElBruno.NetAgent
                     var loggerEx = host.Services.GetService<ILoggerFactory>()?.CreateLogger("Program");
                     loggerEx?.LogError(ex, "Exception during smoke-test service resolution.");
                     host.Dispose();
+                    return 1;
+                }
+            }
+
+            if (smokeTestExit)
+            {
+                var logger = host.Services.GetService<ILoggerFactory>()?.CreateLogger("Program");
+                logger?.LogInformation("Running smoke-test-exit: starting host and invoking Exit flow.");
+
+                try
+                {
+                    using (var startCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10)))
+                    {
+                        host.StartAsync(startCts.Token).GetAwaiter().GetResult();
+                    }
+
+                    // Try to locate the TrayIconService instance from the host and invoke the Exit path used by tests.
+                    ElBruno.NetAgent.Services.TrayIconService? tray = null;
+                    try
+                    {
+                        tray = host.Services.GetService(typeof(ElBruno.NetAgent.Services.TrayIconService)) as ElBruno.NetAgent.Services.TrayIconService;
+                        if (tray == null)
+                        {
+                            var hosted = host.Services.GetServices<Microsoft.Extensions.Hosting.IHostedService>();
+                            tray = hosted?.OfType<ElBruno.NetAgent.Services.TrayIconService>().FirstOrDefault();
+                        }
+                    }
+                    catch { }
+
+                    if (tray != null)
+                    {
+                        try
+                        {
+                            // Invoke the non-dispatcher exit to avoid UI deadlocks in CI.
+                            tray.InvokeExitForTests_NoDispatch();
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.LogWarning(ex, "Failed invoking TrayIconService exit helper");
+                        }
+                    }
+                    else
+                    {
+                        logger?.LogWarning("TrayIconService not found - cannot exercise Exit path");
+                    }
+
+                    // Request host stop and dispose cleanly with a timeout.
+                    try
+                    {
+                        using (var stopCts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                        {
+                            host.StopAsync(stopCts.Token).GetAwaiter().GetResult();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.LogWarning(ex, "Error stopping host during smoke-test-exit");
+                    }
+
+                    host.Dispose();
+                    logger?.LogInformation("Smoke-test-exit completed.");
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    var loggerEx = host.Services.GetService<ILoggerFactory>()?.CreateLogger("Program");
+                    loggerEx?.LogError(ex, "Exception during smoke-test-exit flow.");
+                    try { host.Dispose(); } catch { }
                     return 1;
                 }
             }

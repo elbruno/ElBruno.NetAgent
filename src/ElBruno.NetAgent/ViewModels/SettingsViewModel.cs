@@ -9,6 +9,7 @@ namespace ElBruno.NetAgent.ViewModels
     public class SettingsViewModel : ElBruno.NetAgent.Interfaces.ISettingsViewModel
     {
         private readonly Core.Configuration.IConfigurationService _configurationService;
+        private readonly Core.Services.IDialogService _dialogService;
         private readonly NetAgentOptions _options;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -25,9 +26,10 @@ namespace ElBruno.NetAgent.ViewModels
             public void Execute(object? parameter) => _action(parameter);
         }
 
-        public SettingsViewModel(Core.Configuration.IConfigurationService configurationService)
+        public SettingsViewModel(Core.Configuration.IConfigurationService configurationService, Core.Services.IDialogService dialogService)
         {
             _configurationService = configurationService;
+            _dialogService = dialogService;
             _options = _configurationService.GetOptionsAsync(CancellationToken.None).GetAwaiter().GetResult() ?? new NetAgentOptions();
 
             // Map from options/switching rules to viewmodel properties
@@ -36,16 +38,25 @@ namespace ElBruno.NetAgent.ViewModels
             AutoModeEnabled = s.AutoModeEnabled;
             AutoModeIntervalSeconds = s.AutoModeIntervalSeconds;
             IgnoreVirtualAdapters = s.IgnoreVirtualAdapters;
+            // Split excluded kinds into loopback/vpn flags and keep other kinds
             ExcludedInterfaceKinds = s.ExcludedInterfaceKinds?.ToList() ?? new System.Collections.Generic.List<string>();
+            IgnoreLoopbackAdapters = ExcludedInterfaceKinds.Contains("Loopback");
+            IgnoreVpnAdapters = ExcludedInterfaceKinds.Contains("Vpn");
+            IgnoreDownOrUnknown = s.IgnoreDownOrUnknownAdapters;
+
             PreferredInterfacePatternsText = string.Join(',', s.PreferredInterfacePatterns ?? new string[0]);
             ExcludedInterfacePatternsText = string.Join(',', s.ExcludedInterfacePatterns ?? new string[0]);
 
             ConfigFilePath = _configurationService.GetConfigFilePath();
-            AppDataFolder = _configurationService.GetConfigFolderPath();
+            AppDataFolder = _configuration_service_get_config_folder_path();
 
             SaveCommand = new RelayCommand(async _ => await SaveAsync());
             ReloadCommand = new RelayCommand(_ => Reload());
             ResetCommand = new RelayCommand(_ => ResetToDefaults());
+
+            OpenConfigCommand = new RelayCommand(_ => _dialogService.OpenConfig());
+            OpenAppDataCommand = new RelayCommand(_ => _dialogService.OpenConfigFolder());
+            OpenLogsCommand = new RelayCommand(_ => _dialogService.OpenLogs());
         }
 
         private async Task SaveAsync()
@@ -53,15 +64,29 @@ namespace ElBruno.NetAgent.ViewModels
             // Normalize values
             if (AutoModeIntervalSeconds < 10) AutoModeIntervalSeconds = NetAgentOptions.DefaultCheckIntervalSeconds;
 
+            // Compose excluded kinds based on explicit flags and any additional kinds set in the UI
+            var kinds = new System.Collections.Generic.List<string>();
+            if (this.IgnoreLoopbackAdapters) kinds.Add("Loopback");
+            if (this.IgnoreVpnAdapters) kinds.Add("Vpn");
+            if (this.ExcludedInterfaceKinds != null)
+            {
+                foreach (var k in this.ExcludedInterfaceKinds)
+                {
+                    if (!string.Equals(k, "Loopback", System.StringComparison.OrdinalIgnoreCase) && !string.Equals(k, "Vpn", System.StringComparison.OrdinalIgnoreCase))
+                        kinds.Add(k);
+                }
+            }
+
             var switching = new NetAgentOptions.SwitchingRulesOptions
             {
                 DryRunMode = this.DryRunMode,
                 AutoModeEnabled = this.AutoModeEnabled,
                 AutoModeIntervalSeconds = this.AutoModeIntervalSeconds,
                 IgnoreVirtualAdapters = this.IgnoreVirtualAdapters,
+                IgnoreDownOrUnknownAdapters = this.IgnoreDownOrUnknown,
                 PreferredInterfacePatterns = (PreferredInterfacePatternsText ?? string.Empty).Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries),
                 ExcludedInterfacePatterns = (ExcludedInterfacePatternsText ?? string.Empty).Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries),
-                ExcludedInterfaceKinds = this.ExcludedInterfaceKinds?.ToArray() ?? new string[0]
+                ExcludedInterfaceKinds = kinds.Distinct(System.StringComparer.OrdinalIgnoreCase).ToArray()
             };
 
             _options.SwitchingRules = switching;
@@ -70,12 +95,19 @@ namespace ElBruno.NetAgent.ViewModels
             OnPropertyChanged(nameof(DryRunMode));
             OnPropertyChanged(nameof(AutoModeEnabled));
             OnPropertyChanged(nameof(AutoModeIntervalSeconds));
+            OnPropertyChanged(nameof(IgnoreDownOrUnknown));
         }
 
         // small wrapper to call SaveOptionsAsync with compatibility for older interfaces
         private Task _configuration_service_save_options_async(NetAgentOptions opts)
         {
             return _configurationService.SaveOptionsAsync(opts, CancellationToken.None);
+        }
+
+        // wrapper for compatibility
+        private string _configuration_service_get_config_folder_path()
+        {
+            return _configurationService.GetConfigFolderPath();
         }
 
         private void Reload()
@@ -116,6 +148,9 @@ namespace ElBruno.NetAgent.ViewModels
         public bool AutoModeEnabled { get; set; } = false;
         public int AutoModeIntervalSeconds { get; set; } = NetAgentOptions.DefaultCheckIntervalSeconds;
         public bool IgnoreVirtualAdapters { get; set; } = true;
+        public bool IgnoreLoopbackAdapters { get; set; } = true;
+        public bool IgnoreVpnAdapters { get; set; } = true;
+        public bool IgnoreDownOrUnknown { get; set; } = true;
         public System.Collections.Generic.List<string> ExcludedInterfaceKinds { get; set; } = new System.Collections.Generic.List<string>();
         public string PreferredInterfacePatternsText { get; set; } = string.Empty;
         public string ExcludedInterfacePatternsText { get; set; } = string.Empty;
@@ -126,5 +161,8 @@ namespace ElBruno.NetAgent.ViewModels
         public ICommand SaveCommand { get; }
         public ICommand ReloadCommand { get; }
         public ICommand ResetCommand { get; }
+        public ICommand OpenConfigCommand { get; }
+        public ICommand OpenAppDataCommand { get; }
+        public ICommand OpenLogsCommand { get; }
     }
 }

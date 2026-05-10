@@ -29,27 +29,35 @@ namespace ElBruno.NetAgent.Services
                         _logger.LogInformation("Host is stopping - invoking WPF Application.Shutdown on UI thread.");
                         if (System.Windows.Application.Current?.Dispatcher != null)
                         {
-                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                            // Schedule UI shutdown operations on the dispatcher without blocking the host thread.
+                            try
                             {
-                                try
+                                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                                 {
-                                    // Close any open windows cleanly before shutting down.
                                     try
                                     {
-                                        foreach (var w in System.Windows.Application.Current.Windows)
+                                        // Close any open windows cleanly before shutting down.
+                                        try
                                         {
-                                            try { (w as System.Windows.Window)?.Close(); } catch { }
+                                            foreach (var w in System.Windows.Application.Current.Windows)
+                                            {
+                                                try { (w as System.Windows.Window)?.Close(); } catch { }
+                                            }
                                         }
-                                    }
-                                    catch { }
+                                        catch { }
 
-                                    try { System.Windows.Application.Current.Shutdown(); } catch (Exception ex) { _logger.LogWarning(ex, "Application.Current.Shutdown threw"); }
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogWarning(ex, "Error during UI shutdown handling");
-                                }
-                            });
+                                        try { System.Windows.Application.Current.Shutdown(); } catch (Exception ex) { _logger.LogWarning(ex, "Application.Current.Shutdown threw"); }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogWarning(ex, "Error during UI shutdown handling");
+                                    }
+                                }));
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed scheduling dispatcher invoke for UI shutdown");
+                            }
                         }
                     }
                     catch (Exception ex)
