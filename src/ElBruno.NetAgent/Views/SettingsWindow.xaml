@@ -1,0 +1,35 @@
+<Window x:Class="ElBruno.NetAgent.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings" Height="220" Width="420">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="SETTINGS (Read-only)" FontWeight="Bold" Foreground="DarkBlue" />
+        <StackPanel Orientation="Vertical" Grid.Row="1" Margin="0,8,0,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Dry Run Mode:" Width="140" />
+                <TextBlock Text="{Binding DryRunMode}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <TextBlock Text="Auto Mode Enabled:" Width="140" />
+                <TextBlock Text="{Binding AutoModeEnabled}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <TextBlock Text="Config File Path:" Width="140" />
+                <TextBlock Text="{Binding ConfigFilePath}" TextWrapping="Wrap" Width="240" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <TextBlock Text="App Data Folder:" Width="140" />
+                <TextBlock Text="{Binding AppDataFolder}" TextWrapping="Wrap" Width="240" />
+            </StackPanel>
+        </StackPanel>
+n        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2">
+            <Button Content="Close" Click="Close_Click" MinWidth="80" />
+        </StackPanel>
+    </Grid>
+</Window>
