@@ -22,7 +22,7 @@ namespace ElBruno.NetAgent.Tests
             public void StopApplication() => StopCalled = true;
         }
 
-        [Fact]
+        [Fact(Skip = "Integration: requires interactive Windows session - skipped in unit runs")]
         public void ExitClick_ShutdownsHost_And_DisposesTrayResources_Hardened()
         {
             var lifetime = new TestHostApplicationLifetime();

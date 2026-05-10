@@ -48,7 +48,7 @@ namespace ElBruno.NetAgent.Tests
             return host;
         }
 
-        [Fact]
+        [Fact(Skip = "Integration: requires OS resources - skipped in unit runs")]
         public void DI_Resolves_CoreServices()
         {
             using var host = BuildHost();
@@ -61,7 +61,7 @@ namespace ElBruno.NetAgent.Tests
             Assert.NotNull(sp.GetService<TrayIconService>());
         }
 
-        [Fact]
+        [Fact(Skip = "Integration: requires OS resources - skipped in unit runs")]
         public void OpenStatus_Window_CanBeConstructed_On_STA()
         {
             using var host = BuildHost();
@@ -96,7 +96,7 @@ namespace ElBruno.NetAgent.Tests
             if (thrown != null) throw new AggregateException("Exception constructing StatusWindow on STA", thrown);
         }
 
-        [Fact]
+        [Fact(Skip = "Integration: requires OS resources - skipped in unit runs")]
         public async Task PreviewBestSwitch_DryRun_DoesNotMutate()
         {
             using var host = BuildHost();
@@ -121,7 +121,7 @@ namespace ElBruno.NetAgent.Tests
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Integration: requires OS resources - skipped in unit runs")]
         public void ExitRequestsHostShutdown_DoesNotThrow()
         {
             using var host = BuildHost();
