@@ -221,3 +221,12 @@ Decision: No Phase 7 compiler warnings found
 I inspected the Release build and test results. The build produced zero compiler warnings and all tests pass, so there were no Phase 7 warnings to fix in the current workspace. If you expected three warnings from Phase 7, they may already have been addressed or exist in a different branch/commit. — Orion
 
 
+### 2026-05-09T22:43:57-04:00: User directive
+**By:** Bruno Capuano (via Copilot)
+**What:** A phase is not complete unless:
+- dotnet build -c Release passes with 0 warnings
+- dotnet test -c Release --no-build passes
+- dotnet run -- --smoke-test passes
+**Why:** User requested strict quality gate enforcement for phase completion.
+Decision: Minimal tray menu and dry-run UI
+I added Settings and Network Selector windows and registered them in DI. I simplified the tray context menu to contain only: Open Settings, Open Network Selector, Open Status, Preview Best Switch (Dry-run), Exit — to keep the UI focused and avoid exposing destructive actions from the tray. The Network Selector's "Request switch" button performs a dry-run decision evaluation only and does not call INetworkController.
