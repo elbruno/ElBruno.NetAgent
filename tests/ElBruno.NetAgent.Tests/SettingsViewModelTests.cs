@@ -70,7 +70,7 @@ namespace ElBruno.NetAgent.Tests
             vm.SaveCommand.Execute(null);
 
             Assert.NotNull(fake.LastSavedOptions);
-            var saved = fake.LastSavedOptions!.SwitchingRules;
+            var saved = fake.LastSavedOptions!.SwitchingRules!;
             Assert.False(saved.DryRunMode);
             Assert.True(saved.AutoModeEnabled);
             Assert.Equal(20, saved.AutoModeIntervalSeconds);
@@ -90,7 +90,8 @@ namespace ElBruno.NetAgent.Tests
             vm.SaveCommand.Execute(null);
 
             Assert.NotNull(fake.LastSavedOptions);
-            var saved = fake.LastSavedOptions!.SwitchingRules;
+            Assert.NotNull(fake.LastSavedOptions!.SwitchingRules);
+            var saved = fake.LastSavedOptions!.SwitchingRules!;
             Assert.Equal(NetAgentOptions.DefaultCheckIntervalSeconds, saved.AutoModeIntervalSeconds);
         }
     }

@@ -11,6 +11,23 @@ using ElBruno.NetAgent.Services;
 
 namespace ElBruno.NetAgent.Tests
 {
+    internal class TestNotifyIconAdapter : INotifyIconAdapter
+    {
+        public bool Visible { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public System.Drawing.Icon? Icon { get; set; }
+        public ContextMenuStrip? ContextMenuStrip { get; set; }
+        public bool IsDisposed { get; private set; }
+        public event EventHandler? Disposed;
+        public void ShowBalloonTip(int timeout, string title, string text, ToolTipIcon icon) { /* no-op */ }
+        public void Dispose()
+        {
+            if (IsDisposed) return;
+            IsDisposed = true;
+            Disposed?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     public class TrayIconServiceExitTests_Hardened
     {
         private class TestHostApplicationLifetime : IHostApplicationLifetime
@@ -27,11 +44,11 @@ namespace ElBruno.NetAgent.Tests
         {
             var lifetime = new TestHostApplicationLifetime();
             var logger = new LoggerFactory().CreateLogger<TrayIconService>();
-            var testIcon = new NotifyIcon();
+            var testIcon = new TestNotifyIconAdapter();
             var disposed = false;
             testIcon.Disposed += (s, e) => disposed = true;
             // Construct TrayIconService directly and inject test lifetime and test icon to avoid replacing host lifetime in HostBuilder.
-            var svc = new TrayIconService(logger, lifetime, testIcon);
+            var svc = new TrayIconService(logger, lifetime, (ElBruno.NetAgent.Services.INotifyIconAdapter)testIcon);
             // Execute test inline: no STA thread required because the test uses the no-dispatch helper.
             try
             {

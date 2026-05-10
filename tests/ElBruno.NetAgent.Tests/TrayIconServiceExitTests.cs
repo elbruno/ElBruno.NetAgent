@@ -72,7 +72,7 @@ namespace ElBruno.NetAgent.Tests
         private class TestNotifyIconAdapter : ElBruno.NetAgent.Services.INotifyIconAdapter
         {
             public bool Visible { get; set; }
-            public string Text { get; set; }
+            public string Text { get; set; } = string.Empty;
             public System.Drawing.Icon? Icon { get; set; }
             public ContextMenuStrip? ContextMenuStrip { get; set; }
             public bool IsDisposed { get; private set; }
