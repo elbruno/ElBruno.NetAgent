@@ -5,6 +5,7 @@ using System.Windows;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace ElBruno.NetAgent
 {
@@ -58,6 +59,7 @@ namespace ElBruno.NetAgent
                     services.AddTransient<ElBruno.NetAgent.Interfaces.INetworkSelectorViewModel, ElBruno.NetAgent.ViewModels.NetworkSelectorViewModel>();
                     services.AddTransient<ElBruno.NetAgent.Views.NetworkSelectorWindow>();
 
+                    services.TryAddSingleton<Core.Services.IDialogService, Services.NullDialogService>();
                     services.AddHostedService<Services.TrayIconService>();
 
                     // Auto mode background service - evaluates decision engine on an interval and (dry-run first) requests switches.

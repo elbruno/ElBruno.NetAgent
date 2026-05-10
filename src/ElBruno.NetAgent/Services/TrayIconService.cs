@@ -266,10 +266,36 @@ namespace ElBruno.NetAgent.Services
 
                 _notifyIcon = new NotifyIcon()
                 {
-                    Icon = System.Drawing.SystemIcons.Application,
                     Visible = true,
                     Text = "ElBruno.NetAgent"
                 };
+
+                // Prefer a repository-provided icon if present, otherwise fall back to the system icon.
+                try
+                {
+                    var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "icons", "netagent.ico");
+                    if (File.Exists(iconPath))
+                    {
+                        try
+                        {
+                            _notifyIcon.Icon = new System.Drawing.Icon(iconPath);
+                        }
+                        catch (Exception exIcon)
+                        {
+                            _logger.LogWarning(exIcon, "Failed to load icon from {IconPath}, falling back to SystemIcons.Application", iconPath);
+                            _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
+                        }
+                    }
+                    else
+                    {
+                        _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Unexpected error while selecting tray icon - falling back to SystemIcons.Application");
+                    _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
+                }
 
                 _notifyIcon.ContextMenuStrip = _menu;
 
