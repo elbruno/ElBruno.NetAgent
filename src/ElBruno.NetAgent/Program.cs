@@ -129,7 +129,10 @@ namespace ElBruno.NetAgent
                 logger?.LogInformation("Application exiting - stopping host.");
                 try
                 {
-                    host.StopAsync().GetAwaiter().GetResult();
+                    using (var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                    {
+                        host.StopAsync(cts.Token).GetAwaiter().GetResult();
+                    }
                 }
                 catch (Exception ex)
                 {

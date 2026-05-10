@@ -95,6 +95,25 @@ namespace ElBruno.NetAgent.Services
             return await GetOptionsAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        public async Task SaveAsync(NetAgentOptions options, System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (options == null) throw new ArgumentNullException(nameof(options));
+            try
+            {
+                ValidateOptions(options);
+                var json = JsonSerializer.Serialize(options, new JsonSerializerOptions { WriteIndented = true });
+                if (!Directory.Exists(_folderPath)) Directory.CreateDirectory(_folderPath);
+                await File.WriteAllTextAsync(_filePath, json, cancellationToken).ConfigureAwait(false);
+                _cachedOptions = options;
+                _logger.LogInformation("Saved config to {Path}", _filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save config to {Path}", _filePath);
+                throw;
+            }
+        }
+
         private void ValidateOptions(NetAgentOptions opts)
         {
             if (opts.LatencyThresholdMs < 0)
@@ -131,6 +150,37 @@ namespace ElBruno.NetAgent.Services
             {
                 _logger.LogWarning("TestEndpoints empty - using defaults");
                 opts.TestEndpoints = new[] { "8.8.8.8", "1.1.1.1" };
+            }
+
+            // Validate switching rules if present
+            if (opts.SwitchingRules != null)
+            {
+                if (opts.SwitchingRules.AutoModeIntervalSeconds <= 0)
+                {
+                    _logger.LogWarning("SwitchingRules.AutoModeIntervalSeconds must be > 0 ({Value}) - resetting to default", opts.SwitchingRules.AutoModeIntervalSeconds);
+                    opts.SwitchingRules.AutoModeIntervalSeconds = NetAgentOptions.DefaultCheckIntervalSeconds;
+                }
+
+                if (opts.SwitchingRules.MinQualityScore < 0.0 || opts.SwitchingRules.MinQualityScore > 100.0)
+                {
+                    _logger.LogWarning("SwitchingRules.MinQualityScore out of range ({Value}) - resetting to 0", opts.SwitchingRules.MinQualityScore);
+                    opts.SwitchingRules.MinQualityScore = 0.0;
+                }
+
+                if (opts.SwitchingRules.MinScoreImprovement < 0.0)
+                {
+                    _logger.LogWarning("SwitchingRules.MinScoreImprovement negative ({Value}) - resetting to default", opts.SwitchingRules.MinScoreImprovement);
+                    opts.SwitchingRules.MinScoreImprovement = 5.0;
+                }
+
+                if (opts.SwitchingRules.PreferredInterfacePatterns == null)
+                    opts.SwitchingRules.PreferredInterfacePatterns = new System.Collections.Generic.List<string>();
+
+                if (opts.SwitchingRules.ExcludedInterfacePatterns == null)
+                    opts.SwitchingRules.ExcludedInterfacePatterns = new System.Collections.Generic.List<string>();
+
+                if (opts.SwitchingRules.ExcludedInterfaceKinds == null)
+                    opts.SwitchingRules.ExcludedInterfaceKinds = new System.Collections.Generic.List<ExcludedInterfaceKind>();
             }
         }
 

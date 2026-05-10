@@ -57,6 +57,12 @@ namespace ElBruno.NetAgent.Services
                 return GetOptionsAsync(cancellationToken);
             }
 
+            public System.Threading.Tasks.Task SaveAsync(Core.Configuration.NetAgentOptions options, System.Threading.CancellationToken cancellationToken = default)
+            {
+                // No-op configuration save in test/null implementation.
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+
             public string GetConfigFolderPath()
             {
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElBruno.NetAgent");
@@ -255,10 +261,56 @@ namespace ElBruno.NetAgent.Services
                 exit.Click += (s, e) =>
                 {
                     _logger.LogInformation("Exit clicked.");
-                    _appLifetime?.StopApplication();
-                    if (_appLifetime == null)
+                    // Dispose tray resources on UI thread prior to shutting down the host/UI loop.
+                    try
                     {
-                        System.Windows.Application.Current.Shutdown();
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            try
+                            {
+                                if (_notifyIcon != null)
+                                {
+                                    _notifyIcon.Visible = false;
+                                    _notifyIcon.Dispose();
+                                    _notifyIcon = null;
+                                }
+
+                                if (_menu != null)
+                                {
+                                    _menu.Dispose();
+                                    _menu = null;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Error disposing tray resources during Exit");
+                            }
+
+                            // Request host/application shutdown. If an IHostApplicationLifetime is available,
+                            // let the generic host orchestrate stopping hosted services. Otherwise call Shutdown directly.
+                            _appLifetime?.StopApplication();
+
+                            if (_appLifetime == null)
+                            {
+                                // Close any open WPF windows cleanly before shutting down.
+                                try
+                                {
+                                    foreach (var w in System.Windows.Application.Current.Windows)
+                                    {
+                                        try { (w as System.Windows.Window)?.Close(); } catch { }
+                                    }
+                                }
+                                catch { }
+
+                                try { System.Windows.Application.Current.Shutdown(); } catch { }
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Exit click handling failed");
+                        // Best-effort stop in case dispatcher invocation failed.
+                        _appLifetime?.StopApplication();
                     }
                 };
 

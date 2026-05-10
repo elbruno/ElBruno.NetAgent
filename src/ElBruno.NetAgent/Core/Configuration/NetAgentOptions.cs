@@ -34,4 +34,7 @@ public class NetAgentOptions
 
     // Misc
     public int MaxHistoryItems { get; set; } = 50;
+
+    // Switching rules (UI editable)
+    public SwitchingRules SwitchingRules { get; set; } = new SwitchingRules();
 }
