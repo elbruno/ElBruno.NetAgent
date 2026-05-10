@@ -1,25 +1,16 @@
 # Squad Team
+Project: ElBruno.NetAgent
 
-> ElBruno.NetAgent
-
-## Coordinator
-
-| Name | Role | Notes |
-|------|------|-------|
-| Squad | Coordinator | Routes work, enforces handoffs and reviewer gates. |
+Project Context:
+- Owner: Bruno Capuano
 
 ## Members
-
-| Name | Role | Charter | Status |
-|------|------|---------|--------|
-| kepler | Lead | .squad/agents/kepler/charter.md | active |
-| astra  | Frontend Dev | .squad/agents/astra/charter.md | active |
-| orion  | Backend Dev  | .squad/agents/orion/charter.md | active |
-| turing | Tester        | .squad/agents/turing/charter.md | active |
-| Scribe | Scribe        | .squad/agents/scribe/charter.md | active |
-| Ralph  | Work Monitor  | — | active |
-
-## Project Context
-
-- **Project:** ElBruno.NetAgent
-- **Created:** 2026-05-01
+| Name | Role | Notes |
+|------|------|-------|
+| Artemis | Lead | Scope, decisions, code review |
+| Nova | Frontend Dev | React, UI |
+| Kepler | Backend Dev | APIs, services |
+| Huxley | Tester | Tests, QA |
+| Atlas | DevOps | CI, infra |
+| Scribe | Scribe | Session logger |
+| Ralph | Work Monitor | Work monitor |

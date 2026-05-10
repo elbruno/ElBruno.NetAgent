@@ -1,3 +1,9 @@
-{
-  "agents": {}
-}
+[
+  {"persistent_name":"artemis","universe":"default","created_at":"2026-05-10T16:50:47.4701655-04:00","legacy_named":false,"status":"active"},
+  {"persistent_name":"nova","universe":"default","created_at":"2026-05-10T16:50:47.4701655-04:00","legacy_named":false,"status":"active"},
+  {"persistent_name":"kepler","universe":"default","created_at":"2026-05-10T16:50:47.4701655-04:00","legacy_named":false,"status":"active"},
+  {"persistent_name":"huxley","universe":"default","created_at":"2026-05-10T16:50:47.4701655-04:00","legacy_named":false,"status":"active"},
+  {"persistent_name":"atlas","universe":"default","created_at":"2026-05-10T16:50:47.4701655-04:00","legacy_named":false,"status":"active"},
+  {"persistent_name":"scribe","universe":"default","created_at":"2026-05-10T16:50:47.4701655-04:00","legacy_named":false,"status":"active"},
+  {"persistent_name":"ralph","universe":"default","created_at":"2026-05-10T16:50:47.4701655-04:00","legacy_named":false,"status":"active"}
+]
