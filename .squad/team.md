@@ -1,19 +1,16 @@
 # Squad Team
+Project: ElBruno.NetAgent
 
-> ElBruno.NetAgent
-
-## Coordinator
-
-| Name | Role | Notes |
-|------|------|-------|
-| Squad | Coordinator | Routes work, enforces handoffs and reviewer gates. |
+Project Context:
+- Owner: Bruno Capuano
 
 ## Members
-
-| Name | Role | Charter | Status |
-|------|------|---------|--------|
-
-## Project Context
-
-- **Project:** ElBruno.NetAgent
-- **Created:** 2026-05-01
+| Name | Role | Notes |
+|------|------|-------|
+| Artemis | Lead | Scope, decisions, code review |
+| Nova | Frontend Dev | React, UI |
+| Kepler | Backend Dev | APIs, services |
+| Huxley | Tester | Tests, QA |
+| Atlas | DevOps | CI, infra |
+| Scribe | Scribe | Session logger |
+| Ralph | Work Monitor | Work monitor |

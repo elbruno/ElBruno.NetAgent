@@ -184,3 +184,40 @@ Blog: https://elbruno.com/
 #productivity
 #ElBruno
 ```
+
+## Phase 11 — Promotional materials
+
+Short launch blurb
+
+ElBruno.NetAgent is available now: a lightweight .NET agent that helps developers automate local workflows, manage network reliability, and integrate tools across CI/CD and chat. Fast setup, local-first, and open-source — try it today: <repo_url>
+
+Twitter / X post draft
+
+Launching ElBruno.NetAgent — a lightweight .NET agent to automate local developer workflows and improve reliability for demos and CI: <repo_url> #dotnet #DevTools #OSS
+
+LinkedIn post draft
+
+ElBruno.NetAgent is a lightweight, local-first .NET agent for automating developer workflows and improving network reliability during demos and CI runs. Fast to set up, secure by design, and open for contributions. See the repo and get started: <repo_url>
+
+Blog post outline
+
+- Title + TL;DR
+- Problem: unreliable networks & manual workflows
+- Solution: what ElBruno.NetAgent solves
+- Quickstart: install, run, and an example
+- Architecture & security notes
+- Community & next steps
+
+Suggested hashtags
+
+#dotnet #DevTools #Automation #OSS #DeveloperExperience
+
+Release checklist
+
+- [ ] Finalize README and links
+- [ ] Add CHANGELOG entry (Phase 11)
+- [ ] Tag/release on GitHub
+- [ ] Attach social images to release
+- [ ] Publish announcements (Twitter/X, LinkedIn, blog)
+- [ ] Confirm CI artifacts
+

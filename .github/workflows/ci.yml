@@ -27,4 +27,4 @@ jobs:
         run: dotnet build ElBruno.NetAgent.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test ElBruno.NetAgent.sln --configuration Release --no-build --verbosity normal
+        run: dotnet test ElBruno.NetAgent.sln --configuration Release --no-build --settings disable-parallel.runsettings --verbosity normal

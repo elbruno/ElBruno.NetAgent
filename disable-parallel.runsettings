@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  disable-parallel.runsettings
+  - Disables parallel test execution for CI and local unit test runs to avoid flaky tests
+  - Excludes desktop-only and integration/tray tests by default. Desktop/tray tests require a
+    desktop-capable runner (Windows with interactive session / UI automation support).
+  To run desktop/tray tests, use a dedicated self-hosted runner with desktop access and either
+  a different runsettings file or adjust the TestCaseFilter to include Integration/Desktop tests.
+-->
+<RunSettings>
+  <RunConfiguration>
+    <!-- Prevent parallel test execution which can cause flakiness in CI -->
+    <DisableParallelization>true</DisableParallelization>
+    <!--
+      Exclude desktop and integration tests by default. Most test frameworks map traits to
+      "Category" or "TestCategory". This filter excludes tests marked with those categories.
+      Adjust as needed on desktop-capable runners to include Integration or Desktop tests.
+    -->
+    <TestCaseFilter>Category!=Desktop&amp;Category!=Integration&amp;TestCategory!=Desktop&amp;TestCategory!=Integration</TestCaseFilter>
+  </RunConfiguration>
+</RunSettings>

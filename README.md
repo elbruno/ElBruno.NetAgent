@@ -43,3 +43,14 @@ Do not continue to Phase 1 until the build passes and the README has been update
 ## License
 
 MIT License.
+\nPhase 0 scaffold: minimal WPF solution added.
+
+Smoke test
+
+To run a lightweight smoke-test that builds the Host, resolves core services, and exits without starting the WPF run loop or background hosted services, run:
+
+```text
+dotnet run --project src\ElBruno.NetAgent -- --smoke-test
+```
+
+The smoke-test attempts to resolve these services: IConfigurationService, INetworkInventoryService, INetworkQualityMonitor, and IDecisionEngine. It exits with code 0 on success, non-zero on failure. No network changes are performed.

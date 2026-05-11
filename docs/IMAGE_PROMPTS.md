@@ -121,3 +121,36 @@ Developer desk scene with a laptop and phone connected by USB-C, surrounded by a
 ### Blog header
 
 Developer traveling with laptop and phone tethering, with visual network failover from weak Wi-Fi to stable mobile connection.
+
+---
+
+## Phase 11 — Marketing image prompts (copy-ready)
+
+1) Hero banner (wide)
+- Prompt: "Professional hero banner for a developer tool: dark-blue gradient, simplified .NET cube icon, subtle network lines, text placeholder 'ElBruno.NetAgent', minimal sans-serif, 1200x628"
+- Filename: assets/images/promo-hero-1200x628.png
+- ALT text: "ElBruno.NetAgent hero banner with logo and network lines on dark-blue gradient"
+
+2) Social tile (square)
+- Prompt: "Square social tile: bold logo lockup, tagline 'Automate .NET workflows', white background, accent blue, 1200x1200"
+- Filename: assets/images/social-tile-1200x1200.png
+- ALT text: "Social tile with ElBruno.NetAgent logo and 'Automate .NET workflows'"
+
+3) Blog feature image
+- Prompt: "Developer workspace illustration with CI/CD icons and agent connecting tools; warm professional colors, 1600x900"
+- Filename: assets/images/blog-feature-1600x900.png
+- ALT text: "Illustration of developer workspace with CI/CD pipeline and agent integration"
+
+Local LLM-friendly prompts (short)
+- hero: "hero banner, dark-blue gradient, .NET cube, network lines, 'ElBruno.NetAgent', 1200x628"
+- social: "square tile, logo and 'Automate .NET workflows', white background, 1200x1200"
+- blog: "developer workspace illustration, CI/CD icons, agent connecting tools, 1600x900"
+
+t2i command examples (replace with your local tool)
+- Generic: t2i --prompt "<PROMPT>" --width 1200 --height 628 --output assets/images/promo-hero-1200x628.png
+- AUTOMATIC1111 example: python scripts/txt2img.py --prompt "<PROMPT>" --W 1200 --H 628 --outdir outputs --skip_grid
+- InvokeAI example: invokeai --prompt "<PROMPT>" --width 1600 --height 900 --output assets/images/blog-feature-1600x900.png
+
+Notes
+- Use the provided filenames as placeholders for release assets. Do not generate images in CI; keep image generation local and review visually before publishing.
+

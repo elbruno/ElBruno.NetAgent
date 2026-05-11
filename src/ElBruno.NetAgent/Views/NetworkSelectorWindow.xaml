@@ -1,0 +1,36 @@
+<Window x:Class="ElBruno.NetAgent.Views.NetworkSelectorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Network Selector" Height="400" Width="700">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="NETWORK SELECTOR (Dry-run)" FontWeight="Bold" Foreground="DarkRed" />
+
+        <ListView Grid.Row="1" ItemsSource="{Binding Interfaces}" Name="AdaptersList">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="180" />
+                    <GridViewColumn Header="Description" DisplayMemberBinding="{Binding Description}" Width="220" />
+                    <GridViewColumn Header="Kind" DisplayMemberBinding="{Binding Kind}" Width="80" />
+                    <GridViewColumn Header="Status" DisplayMemberBinding="{Binding OperationalStatus}" Width="80" />
+                    <GridViewColumn Header="Quality" DisplayMemberBinding="{Binding LatestQualityReport}" Width="160" />
+                    <GridViewColumn Header="Action" Width="80">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="Request switch (dry-run)" Command="{Binding DataContext.RequestSwitchCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" MinWidth="120" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right">
+            <Button Content="Refresh" Command="{Binding RefreshCommand}" MinWidth="80" />
+            <Button Content="Close" Click="Close_Click" MinWidth="80" Margin="8,0,0,0" />
+        </StackPanel>
+    </Grid>
+</Window>
