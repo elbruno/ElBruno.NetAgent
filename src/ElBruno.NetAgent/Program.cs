@@ -159,6 +159,44 @@ namespace ElBruno.NetAgent
                 }
             }
 
+            // Smoke test for SettingsViewModel Save behavior without touching disk
+            var smokeTestSettingsSave = args != null && args.Any(a => string.Equals(a, "--smoke-test-settings-save", StringComparison.OrdinalIgnoreCase));
+            if (smokeTestSettingsSave)
+            {
+                var logger = host.Services.GetService<ILoggerFactory>()?.CreateLogger("Program");
+                logger?.LogInformation("Running smoke-test-settings-save: constructing SettingsViewModel with in-memory config service.");
+                try
+                {
+                    var inmem = new ElBruno.NetAgent.Services.InMemoryConfigurationService();
+                    var vm = new ElBruno.NetAgent.ViewModels.SettingsViewModel(inmem);
+
+                    // Change a value to ensure Save composes something to persist
+                    vm.PreferredInterfacePatternsText = "smoke-test";
+
+                    // Execute save command (should be non-blocking)
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    vm.SaveCommand.Execute(null);
+                    sw.Stop();
+                    logger?.LogInformation("SaveCommand.Execute returned in {Elapsed}ms", sw.ElapsedMilliseconds);
+
+                    // Wait up to 5 seconds for save to complete
+                    var saved = inmem.AwaitSavedAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                    if (!saved)
+                    {
+                        logger?.LogError("Settings save did not complete within timeout.");
+                        return 1;
+                    }
+
+                    logger?.LogInformation("Settings save completed.");
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError(ex, "Exception during smoke-test-settings-save.");
+                    return 1;
+                }
+            }
+
             if (smokeTestExit)
             {
                 var logger = host.Services.GetService<ILoggerFactory>()?.CreateLogger("Program");

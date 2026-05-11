@@ -25,7 +25,7 @@ namespace ElBruno.NetAgent.ViewModels
             public event EventHandler? CanExecuteChanged;
 #pragma warning restore CS0067
             public bool CanExecute(object? parameter) => true;
-            public void Execute(object? parameter) => _action(parameter).GetAwaiter().GetResult();
+            public void Execute(object? parameter) => _ = _action(parameter);
         }
 
         public SettingsViewModel(Core.Configuration.IConfigurationService configurationService) : this(configurationService, new ElBruno.NetAgent.Services.NullDialogService()) { }
@@ -137,7 +137,7 @@ namespace ElBruno.NetAgent.ViewModels
 
             Debug.WriteLine($"SettingsViewModel.SaveAsync: toSave.SwitchingRules.AutoModeIntervalSeconds = {toSave.SwitchingRules?.AutoModeIntervalSeconds}; toSave.AutoModeIntervalSeconds = {toSave.AutoModeIntervalSeconds}");
 
-            await _configuration_service_save_options_async(toSave).ConfigureAwait(false);
+            await _configuration_service_save_options_async(toSave);
 
             // Update in-memory options instance for runtime consistency
             _options.SwitchingRules = switching;
