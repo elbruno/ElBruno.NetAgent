@@ -97,34 +97,41 @@ namespace ElBruno.NetAgent.Services
 
         private void ValidateOptions(NetAgentOptions opts)
         {
+            // Top-level numeric validation
             if (opts.LatencyThresholdMs < 0)
             {
                 _logger.LogWarning("LatencyThresholdMs is negative ({Value}) - resetting to default", opts.LatencyThresholdMs);
-                opts.LatencyThresholdMs = 150;
+                opts.LatencyThresholdMs = NetAgentOptions.DefaultLatencyThresholdMs;
             }
 
             if (opts.PacketLossThresholdPercent < 0 || opts.PacketLossThresholdPercent > 100)
             {
                 _logger.LogWarning("PacketLossThresholdPercent out of range ({Value}) - resetting to default", opts.PacketLossThresholdPercent);
-                opts.PacketLossThresholdPercent = 5.0;
+                opts.PacketLossThresholdPercent = NetAgentOptions.DefaultPacketLossThresholdPercent;
             }
 
-            if (opts.CheckIntervalSeconds <= 0)
+            if (opts.CheckIntervalSeconds < 1)
             {
-                _logger.LogWarning("CheckIntervalSeconds must be > 0 ({Value}) - resetting to default", opts.CheckIntervalSeconds);
-                opts.CheckIntervalSeconds = 30;
+                _logger.LogWarning("CheckIntervalSeconds must be >= 1 ({Value}) - resetting to default", opts.CheckIntervalSeconds);
+                opts.CheckIntervalSeconds = NetAgentOptions.DefaultCheckIntervalSeconds;
             }
 
-            if (opts.MinimumChecksBeforeSwitch <= 0)
+            if (opts.AutoModeIntervalSeconds < 1)
             {
-                _logger.LogWarning("MinimumChecksBeforeSwitch must be > 0 ({Value}) - resetting to default", opts.MinimumChecksBeforeSwitch);
-                opts.MinimumChecksBeforeSwitch = 3;
+                _logger.LogWarning("AutoModeIntervalSeconds must be >= 1 ({Value}) - resetting to default", opts.AutoModeIntervalSeconds);
+                opts.AutoModeIntervalSeconds = NetAgentOptions.DefaultCheckIntervalSeconds;
+            }
+
+            if (opts.MinimumChecksBeforeSwitch < 1)
+            {
+                _logger.LogWarning("MinimumChecksBeforeSwitch must be >= 1 ({Value}) - resetting to default", opts.MinimumChecksBeforeSwitch);
+                opts.MinimumChecksBeforeSwitch = NetAgentOptions.DefaultMinimumChecksBeforeSwitch;
             }
 
             if (opts.MinimumScoreDeltaToSwitch < 0)
             {
                 _logger.LogWarning("MinimumScoreDeltaToSwitch must be >= 0 ({Value}) - resetting to default", opts.MinimumScoreDeltaToSwitch);
-                opts.MinimumScoreDeltaToSwitch = 10.0;
+                opts.MinimumScoreDeltaToSwitch = NetAgentOptions.DefaultMinimumScoreDeltaToSwitch;
             }
 
             if (opts.TestEndpoints == null || opts.TestEndpoints.Length == 0)
@@ -132,6 +139,104 @@ namespace ElBruno.NetAgent.Services
                 _logger.LogWarning("TestEndpoints empty - using defaults");
                 opts.TestEndpoints = new[] { "8.8.8.8", "1.1.1.1" };
             }
+
+            // Switching rules validation and normalization
+            if (opts.SwitchingRules == null)
+            {
+                opts.SwitchingRules = new NetAgentOptions.SwitchingRulesOptions();
+            }
+
+            var s = opts.SwitchingRules;
+
+            if (s.AutoModeIntervalSeconds < 1)
+            {
+                _logger.LogWarning("SwitchingRules.AutoModeIntervalSeconds must be >= 1 ({Value}) - resetting to default", s.AutoModeIntervalSeconds);
+                s.AutoModeIntervalSeconds = NetAgentOptions.DefaultCheckIntervalSeconds;
+            }
+
+            if (s.PauseAutoSwitchDurationSeconds < 0)
+            {
+                _logger.LogWarning("PauseAutoSwitchDurationSeconds must be >= 0 ({Value}) - resetting to 0", s.PauseAutoSwitchDurationSeconds);
+                s.PauseAutoSwitchDurationSeconds = 0;
+            }
+
+            if (s.PauseAutoSwitchUntilSeconds < 0)
+            {
+                _logger.LogWarning("PauseAutoSwitchUntilSeconds must be >= 0 ({Value}) - resetting to 0", s.PauseAutoSwitchUntilSeconds);
+                s.PauseAutoSwitchUntilSeconds = 0;
+            }
+
+            if (s.MinimumQualityScore < 0)
+            {
+                _logger.LogWarning("MinimumQualityScore must be >= 0 ({Value}) - resetting to 0", s.MinimumQualityScore);
+                s.MinimumQualityScore = 0.0;
+            }
+
+            if (s.MinimumScoreImprovement < 0)
+            {
+                _logger.LogWarning("MinimumScoreImprovement must be >= 0 ({Value}) - resetting to 0", s.MinimumScoreImprovement);
+                s.MinimumScoreImprovement = 0.0;
+            }
+
+            if (s.PreferredInterfacePatterns == null)
+            {
+                s.PreferredInterfacePatterns = new string[0];
+            }
+
+            if (s.ExcludedInterfacePatterns == null)
+            {
+                s.ExcludedInterfacePatterns = new string[0];
+            }
+
+            if (s.ExcludedInterfaceKinds == null)
+            {
+                s.ExcludedInterfaceKinds = new string[] { "Loopback", "Vpn" };
+            }
+
+            // Synchronize explicit ignore flags with ExcludedInterfaceKinds
+            try
+            {
+                var kinds = new System.Collections.Generic.List<string>(s.ExcludedInterfaceKinds ?? System.Array.Empty<string>());
+
+                // If UI flags were set, respect them; otherwise derive flags from kinds list
+                if (!s.IgnoreLoopbackAdapters && !kinds.Contains("Loopback"))
+                {
+                    // nothing - leave as-is
+                }
+                else if (s.IgnoreLoopbackAdapters && !kinds.Contains("Loopback"))
+                {
+                    kinds.Add("Loopback");
+                }
+
+                if (s.IgnoreVpnAdapters && !kinds.Contains("Vpn"))
+                {
+                    kinds.Add("Vpn");
+                }
+
+                // Ensure flags reflect list contents
+                s.IgnoreLoopbackAdapters = kinds.Contains("Loopback");
+                s.IgnoreVpnAdapters = kinds.Contains("Vpn");
+
+                s.ExcludedInterfaceKinds = kinds.Distinct(System.StringComparer.OrdinalIgnoreCase).ToArray();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error normalizing ExcludedInterfaceKinds - clearing to defaults");
+                s.ExcludedInterfaceKinds = new string[] { "Loopback", "Vpn" };
+                s.IgnoreLoopbackAdapters = true;
+                s.IgnoreVpnAdapters = true;
+            }
+
+            // Ensure boolean defaults for other flags
+            // Preserve defaults from class; explicitly ensure values are set
+            // (these assignments are idempotent but make the intent clear)
+            s.DryRunMode = s.DryRunMode;
+            s.AutoModeEnabled = s.AutoModeEnabled;
+            s.PreferUsbTethering = s.PreferUsbTethering;
+            s.AllowWiFi = s.AllowWiFi;
+            s.AllowEthernet = s.AllowEthernet;
+            s.IgnoreVirtualAdapters = s.IgnoreVirtualAdapters;
+            s.IgnoreDownOrUnknownAdapters = s.IgnoreDownOrUnknownAdapters;
         }
 
         public void OpenConfigFolder()
@@ -186,6 +291,15 @@ namespace ElBruno.NetAgent.Services
 
             try
             {
+                // Debug: log incoming values before validation
+                Debug.WriteLine($"ConfigurationService.SaveOptionsAsync: before Validate - AutoModeIntervalSeconds={options.AutoModeIntervalSeconds}; SwitchingRules.AutoModeIntervalSeconds={options.SwitchingRules?.AutoModeIntervalSeconds}");
+
+                // Validate and normalize before persisting so the on-disk representation is complete
+                ValidateOptions(options);
+
+                // Debug: log values after validation
+                Debug.WriteLine($"ConfigurationService.SaveOptionsAsync: after Validate - AutoModeIntervalSeconds={options.AutoModeIntervalSeconds}; SwitchingRules.AutoModeIntervalSeconds={options.SwitchingRules?.AutoModeIntervalSeconds}");
+
                 if (!Directory.Exists(_folderPath))
                 {
                     Directory.CreateDirectory(_folderPath);
@@ -193,6 +307,8 @@ namespace ElBruno.NetAgent.Services
 
                 var json = JsonSerializer.Serialize(options, new JsonSerializerOptions { WriteIndented = true });
                 await File.WriteAllTextAsync(_filePath, json, cancellationToken).ConfigureAwait(false);
+
+                // Update cached instance so subsequent reads reflect saved state
                 _cachedOptions = options;
                 _logger.LogInformation("Saved config to {Path}", _filePath);
             }

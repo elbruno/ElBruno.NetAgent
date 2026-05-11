@@ -47,12 +47,17 @@ namespace ElBruno.NetAgent.Services
         public async Task EvaluateOnceAsync(CancellationToken cancellationToken = default)
         {
             var opts = _options.Value ?? new NetAgentOptions();
+            var switching = opts.SwitchingRules;
 
-            if (!opts.AutoModeEnabled)
+            // Determine effective flags by combining top-level and switching rules (switching rules take precedence when set)
+            var effectiveAutoModeEnabled = opts.AutoModeEnabled || (switching?.AutoModeEnabled ?? false);
+            if (!effectiveAutoModeEnabled)
             {
                 _logger.LogDebug("AutoModeHostedService: AutoModeEnabled=false - skipping evaluation.");
                 return;
             }
+
+            var effectiveDryRun = opts.DryRunMode || (switching?.DryRunMode ?? false);
 
             _logger.LogInformation("AutoModeHostedService: Auto mode evaluation starting.");
 
@@ -71,7 +76,7 @@ namespace ElBruno.NetAgent.Services
 
                     if (decision.Action == Core.Decision.DecisionAction.SwitchAdapter)
                     {
-                        if (opts.DryRunMode)
+                        if (effectiveDryRun)
                         {
                             _logger.LogInformation("AutoMode (dry-run): would request switch to interface {Id}", adapter.Id);
                         }
@@ -114,8 +119,8 @@ namespace ElBruno.NetAgent.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var intervalSeconds = Math.Max(1, _options.Value?.AutoModeIntervalSeconds ?? NetAgentOptions.DefaultCheckIntervalSeconds);
-            _logger.LogInformation("AutoModeHostedService: starting with interval {Interval}s (AutoModeEnabled={AutoModeEnabled}, DryRun={DryRun})", intervalSeconds, _options.Value?.AutoModeEnabled, _options.Value?.DryRunMode);
+            var intervalSeconds = Math.Max(1, _options.Value?.SwitchingRules?.AutoModeIntervalSeconds ?? _options.Value?.AutoModeIntervalSeconds ?? NetAgentOptions.DefaultCheckIntervalSeconds);
+            _logger.LogInformation("AutoModeHostedService: starting with interval {Interval}s (AutoModeEnabled={AutoModeEnabled}, DryRun={DryRun})", intervalSeconds, _options.Value?.AutoModeEnabled ?? _options.Value?.SwitchingRules?.AutoModeEnabled, _options.Value?.DryRunMode ?? _options.Value?.SwitchingRules?.DryRunMode);
 
             while (!stoppingToken.IsCancellationRequested)
             {
