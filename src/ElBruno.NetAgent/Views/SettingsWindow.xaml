@@ -28,7 +28,7 @@
                 <TextBlock Text="{Binding AppDataFolder}" TextWrapping="Wrap" Width="240" />
             </StackPanel>
         </StackPanel>
-n        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2">
             <Button Content="Close" Click="Close_Click" MinWidth="80" />
         </StackPanel>
     </Grid>

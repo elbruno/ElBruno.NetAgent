@@ -43,6 +43,20 @@ namespace ElBruno.NetAgent.Services
             _serviceProvider = serviceProvider;
         }
 
+        // Back-compat overload: older tests or registrations passed lifetime and serviceProvider as the 6th/7th args.
+        // Preserve the previous parameter ordering by exposing an overload that accepts the appLifetime and serviceProvider
+        // and supplies safe no-op dialog/link services.
+        public TrayIconService(ILogger<TrayIconService> logger,
+            Core.Configuration.IConfigurationService configurationService,
+            Core.Services.INetworkInventoryService inventoryService,
+            Core.Services.INetworkQualityMonitor qualityMonitor,
+            Core.Decision.IDecisionEngine decisionEngine,
+            IHostApplicationLifetime? appLifetime = null,
+            IServiceProvider? serviceProvider = null)
+            : this(logger, configurationService, inventoryService, qualityMonitor, decisionEngine, new ElBruno.NetAgent.Services.NullDialogService(), new ElBruno.NetAgent.Services.NullLinkService(), appLifetime, serviceProvider)
+        {
+        }
+
         private readonly Core.Configuration.IConfigurationService _configurationService;
         private readonly Core.Services.INetworkInventoryService _inventoryService;
         private readonly Core.Services.INetworkQualityMonitor _qualityMonitor;

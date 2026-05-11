@@ -8,7 +8,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-n        <TextBlock Text="NETWORK SELECTOR (Dry-run)" FontWeight="Bold" Foreground="DarkRed" />
+        <TextBlock Text="NETWORK SELECTOR (Dry-run)" FontWeight="Bold" Foreground="DarkRed" />
 
         <ListView Grid.Row="1" ItemsSource="{Binding Interfaces}" Name="AdaptersList">
             <ListView.View>
@@ -28,7 +28,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-n        <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right">
+        <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right">
             <Button Content="Refresh" Command="{Binding RefreshCommand}" MinWidth="80" />
             <Button Content="Close" Click="Close_Click" MinWidth="80" Margin="8,0,0,0" />
         </StackPanel>

@@ -26,6 +26,8 @@ namespace ElBruno.NetAgent.ViewModels
             public void Execute(object? parameter) => _action(parameter);
         }
 
+        public SettingsViewModel(Core.Configuration.IConfigurationService configurationService) : this(configurationService, new ElBruno.NetAgent.Services.NullDialogService()) { }
+
         public SettingsViewModel(Core.Configuration.IConfigurationService configurationService, Core.Services.IDialogService dialogService)
         {
             _configurationService = configurationService;

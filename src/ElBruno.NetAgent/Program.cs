@@ -104,14 +104,49 @@ namespace ElBruno.NetAgent
                         failed = true;
                     }
 
+                    // Attempt to construct (but not show) key WPF windows to validate XAML runtime
+                    try
+                    {
+                        try
+                        {
+                            var settingsWindow = host.Services.GetService<ElBruno.NetAgent.Views.SettingsWindow>();
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.LogError(ex, "SettingsWindow construction failed.");
+                            failed = true;
+                        }
+
+                        try
+                        {
+                            var statusWindow = host.Services.GetService<ElBruno.NetAgent.Views.StatusWindow>();
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.LogError(ex, "StatusWindow construction failed.");
+                            failed = true;
+                        }
+
+                        try
+                        {
+                            var nsWindow = host.Services.GetService<ElBruno.NetAgent.Views.NetworkSelectorWindow>();
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.LogError(ex, "NetworkSelectorWindow construction failed.");
+                            failed = true;
+                        }
+                    }
+                    catch { }
+
                     if (failed)
                     {
-                        logger?.LogError("Smoke-test failed: one or more services could not be resolved.");
+                        logger?.LogError("Smoke-test failed: one or more services or UI windows could not be resolved/constructed.");
                         host.Dispose();
                         return 1;
                     }
 
-                    logger?.LogInformation("Smoke-test succeeded: all services resolved.");
+                    logger?.LogInformation("Smoke-test succeeded: all services resolved and UI windows constructed.");
                     host.Dispose();
                     return 0;
                 }
